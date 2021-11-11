@@ -5,9 +5,7 @@
 
 #include "lab_m1/Tema1/transform2D.h"
 #include "lab_m1/Tema1/object2D.h"
-#include "lab_m1/Tema1/transform2D.h"
 
-#include "lab_m1/lab3/lab3_vis2D.h"
 /* TODOs:
 - Somehow, place the init and render methods in PLAYER.H. / ..
 - Make player, enemy, ... classes inherit / override CreateMesh
@@ -34,11 +32,11 @@ Tema1::~Tema1()
 {
 }
 
-void Tema1::InitEntity(Entity *entity) {
+void Tema1::InitEntity(Entity* entity) {
     entity->Create();
 
     vector<Mesh*> entityMeshes = entity->getMeshes();
-    for (Mesh *m : entityMeshes) { // Indexing entity meshes
+    for (Mesh* m : entityMeshes) { // Indexing entity meshes
         AddMeshToList(m);
     }
 }
@@ -50,26 +48,81 @@ void Tema1::RenderEntity(Entity* entity) {
     }
 }
 
+// 2D visualization matrix
+glm::mat3 Tema1::VisualizationTransf2D(const LogicSpace& logicSpace, const ViewportSpace& viewSpace)
+{
+    float sx, sy, tx, ty;
+    sx = viewSpace.width / logicSpace.width;
+    sy = viewSpace.height / logicSpace.height;
+    tx = viewSpace.x - sx * logicSpace.x;
+    ty = viewSpace.y - sy * logicSpace.y;
+
+    return glm::transpose(glm::mat3(
+        sx, 0.0f, tx,
+        0.0f, sy, ty,
+        0.0f, 0.0f, 1.0f));
+}
+
+// Uniform 2D visualization matrix (same scale factor on x and y axes)
+glm::mat3 Tema1::VisualizationTransf2DUnif(const LogicSpace& logicSpace, const ViewportSpace& viewSpace)
+{
+    float sx, sy, tx, ty, smin;
+    sx = viewSpace.width / logicSpace.width;
+    sy = viewSpace.height / logicSpace.height;
+    if (sx < sy)
+        smin = sx;
+    else
+        smin = sy;
+    tx = viewSpace.x - smin * logicSpace.x + (viewSpace.width - smin * logicSpace.width) / 2;
+    ty = viewSpace.y - smin * logicSpace.y + (viewSpace.height - smin * logicSpace.height) / 2;
+
+    return glm::transpose(glm::mat3(
+        smin, 0.0f, tx,
+        0.0f, smin, ty,
+        0.0f, 0.0f, 1.0f));
+}
+
+void Tema1::SetViewportArea(const ViewportSpace& viewSpace, glm::vec3 colorColor, bool clear)
+{
+    glViewport(viewSpace.x, viewSpace.y, viewSpace.width, viewSpace.height);
+
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(viewSpace.x, viewSpace.y, viewSpace.width, viewSpace.height);
+
+    // Clears the color buffer (using the previously set color) and depth buffer
+    glClearColor(colorColor.r, colorColor.g, colorColor.b, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_SCISSOR_TEST);
+
+    GetSceneCamera()->SetOrthographic((float)viewSpace.x, (float)(viewSpace.x + viewSpace.width), (float)viewSpace.y, (float)(viewSpace.y + viewSpace.height), 0.1f, 400);
+    GetSceneCamera()->Update();
+}
+
 void Tema1::Init()
 {
     glm::ivec2 resolution = window->GetResolution();
     auto camera = GetSceneCamera();
-    camera->SetOrthographic(0, (float)resolution.x, 0, (float)resolution.y, 0.01f, 400);
     camera->SetPosition(glm::vec3(0, 0, 50));
     camera->SetRotation(glm::vec3(0, 0, 0));
     camera->Update();
     GetCameraInput()->SetActive(false);
 
-    glm::vec3 corner = glm::vec3(0, 0, 0);
+    logicSpace.x = 0;       // logic x
+    logicSpace.y = 0;       // logic y
+    logicSpace.width = 1280;   // logic width
+    logicSpace.height = 720;  // logic height
 
-    /*Mesh* square1 = object2D::CreateSquare("square1", corner, squareSide, glm::vec3(1, 0, 0), true);
-    AddMeshToList(square1);*/
+    float squareSide = 500;
+    glm::vec3 corner = glm::vec3(logicSpace.width/2 - squareSide/2, logicSpace.height/2 - squareSide/2, 0);
+   
+    Mesh* square1 = object2D::CreateRectangle("square1", corner, squareSide, squareSide, glm::vec3(1, 0, 0), true);
+    AddMeshToList(square1);
 
     translateX = 0;
     translateY = 0;
 
     rotationAngle = 0;
-    
+
     mouseY = 0;
     mouseX = 1;
 
@@ -91,13 +144,27 @@ void Tema1::FrameStart()
 
 void Tema1::Update(float deltaTimeSeconds)
 {
-    rotationAngle = atan2(mouseX - 600 - translateX, mouseY - 300 + translateY);
+      glm::ivec2 resolution = window->GetResolution();
 
-    player->modelMatrix = transform2D::Translate(translateX, translateY) *
+      // Sets the screen area where to draw
+      viewSpace = ViewportSpace(0, 0, resolution.x, resolution.y);
+      SetViewportArea(viewSpace, glm::vec3(0), true);
+
+      // Compute the 2D visualization matrix
+      visMatrix = glm::mat3(1);
+      visMatrix *= VisualizationTransf2DUnif(logicSpace, viewSpace);
+
+      modelMatrix = visMatrix * transform2D::Translate(0, 0);
+      RenderMesh2D(meshes["square1"], shaders["VertexColor"], modelMatrix);
+    /*
+    rotationAngle = atan2(mouseX - 600 - translateX, mouseY - 300 + translateY);
+    player->modelMatrix = //visMatrix *
+        transform2D::Translate(translateX, translateY) *
         transform2D::Translate(600, 300) *   // Initial object center is currently (600, 300)
         transform2D::Rotate(rotationAngle) *
         transform2D::Translate(-600, -300);
     RenderEntity(player);
+    */
 }
 
 void Tema1::FrameEnd()

@@ -28,6 +28,38 @@ namespace m1
 
         void InitEntity(Entity *entity);
         void RenderEntity(Entity* entity);
+
+        // Viewport related
+
+        struct ViewportSpace
+        {
+            ViewportSpace() : x(0), y(0), width(1), height(1) {}
+            ViewportSpace(int x, int y, int width, int height)
+                : x(x), y(y), width(width), height(height) {}
+            int x;
+            int y;
+            int width;
+            int height;
+        };
+
+        struct LogicSpace
+        {
+            LogicSpace() : x(0), y(0), width(1), height(1) {}
+            LogicSpace(float x, float y, float width, float height)
+                : x(x), y(y), width(width), height(height) {}
+            float x;
+            float y;
+            float width;
+            float height;
+        };
+
+        glm::mat3 VisualizationTransf2D(const LogicSpace& logicSpace, const ViewportSpace& viewSpace);
+        glm::mat3 VisualizationTransf2DUnif(const LogicSpace& logicSpace, const ViewportSpace& viewSpace);
+        void SetViewportArea(const ViewportSpace& viewSpace, glm::vec3 colorColor = glm::vec3(0), bool clear = true);
+        ViewportSpace viewSpace;
+        LogicSpace logicSpace;
+        glm::mat3  visMatrix;
+
     protected:
         float cx, cy;
         glm::mat3 modelMatrix;
