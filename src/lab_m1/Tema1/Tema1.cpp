@@ -114,8 +114,7 @@ void Tema1::Init()
 
     float squareSide = 500;
     glm::vec3 corner = glm::vec3(logicSpace.width/2 - squareSide/2, logicSpace.height/2 - squareSide/2, 0);
-   
-    Mesh* square1 = object2D::CreateRectangle("square1", corner, squareSide, squareSide, glm::vec3(1, 0, 0), true);
+    Mesh* square1 = object2D::CreateRectangle("square1", corner, squareSide, squareSide, glm::vec3(0.75f, 0.87f, 0.93f), true);
     AddMeshToList(square1);
 
     translateX = 0;
@@ -125,9 +124,12 @@ void Tema1::Init()
 
     mouseY = 0;
     mouseX = 1;
-
-    player = new Player();
+    
+    // Player instantiation
+    player = new Player(logicSpace);
     InitEntity(player);
+
+    // Position player in the middle of the logic space
 }
 
 
@@ -137,9 +139,9 @@ void Tema1::FrameStart()
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glm::ivec2 resolution = window->GetResolution();
+    //glm::ivec2 resolution = window->GetResolution();
     // Sets the screen area where to draw
-    glViewport(0, 0, resolution.x, resolution.y);
+    //glViewport(0, 0, resolution.x, resolution.y);
 }
 
 void Tema1::Update(float deltaTimeSeconds)
@@ -151,20 +153,28 @@ void Tema1::Update(float deltaTimeSeconds)
       SetViewportArea(viewSpace, glm::vec3(0), true);
 
       // Compute the 2D visualization matrix
-      visMatrix = glm::mat3(1);
-      visMatrix *= VisualizationTransf2DUnif(logicSpace, viewSpace);
+      visMatrix = VisualizationTransf2D(logicSpace, viewSpace);
 
       modelMatrix = visMatrix * transform2D::Translate(0, 0);
-      RenderMesh2D(meshes["square1"], shaders["VertexColor"], modelMatrix);
-    /*
-    rotationAngle = atan2(mouseX - 600 - translateX, mouseY - 300 + translateY);
-    player->modelMatrix = //visMatrix *
-        transform2D::Translate(translateX, translateY) *
-        transform2D::Translate(600, 300) *   // Initial object center is currently (600, 300)
-        transform2D::Rotate(rotationAngle) *
-        transform2D::Translate(-600, -300);
+    
+      // Transform mouse coordinates from viewport space to logical space
+      float mouseX_logic = logicSpace.x + (mouseX - viewSpace.x) * (logicSpace.width - logicSpace.x) / (viewSpace.width - viewSpace.x);
+      float mouseY_logic = logicSpace.y + (mouseY - viewSpace.y) * (logicSpace.height - logicSpace.y) / (viewSpace.height - viewSpace.y);
+
+      float dx = mouseX_logic - logicSpace.width / 2 - translateX;
+      float dy = -(logicSpace.height - mouseY_logic - logicSpace.height / 2 - translateY);
+      rotationAngle = atan2(dx, dy);
+
+      player->modelMatrix = visMatrix *
+          transform2D::Translate(translateX, translateY) *
+          transform2D::Translate(logicSpace.width / 2, logicSpace.height / 2) *
+          transform2D::Rotate(rotationAngle) *
+          transform2D::Translate(-logicSpace.width / 2, -logicSpace.height / 2);
+
     RenderEntity(player);
-    */
+
+    RenderMesh2D(meshes["square1"], shaders["VertexColor"], modelMatrix);
+    
 }
 
 void Tema1::FrameEnd()
@@ -203,14 +213,14 @@ void Tema1::OnKeyRelease(int key, int mods)
     // Add key release event
 }
 
-
 void Tema1::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 {
     // Add mouse move event
     this->mouseX = mouseX;
     this->mouseY = mouseY;
+    this->deltaX = deltaX;
+    this->deltaY = deltaY;
 }
-
 
 void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
 {

@@ -1,10 +1,11 @@
 #include "components/simple_scene.h"
 #include "lab_m1/Tema1/entity.h"
+#include "space.h"
 
 class Player : public Entity
 {
 	public:
-		Player();
+		Player(LogicSpace logicSpace);
 		void Create();
 		std::vector<Mesh*> const& getMeshes();
 	private:
