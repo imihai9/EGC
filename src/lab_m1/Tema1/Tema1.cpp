@@ -85,16 +85,29 @@ glm::mat3 Tema1::VisualizationTransf2DUnif(const LogicSpace& logicSpace, const V
 void Tema1::SetViewportArea(const ViewportSpace& viewSpace, glm::vec3 colorColor, bool clear)
 {
     glViewport(viewSpace.x, viewSpace.y, viewSpace.width, viewSpace.height);
-
+    //glViewport(viewSpace.x, viewSpace.y, viewSpace.width, viewSpace.height);
+    
     glEnable(GL_SCISSOR_TEST);
-    glScissor(viewSpace.x, viewSpace.y, viewSpace.width, viewSpace.height);
-
     // Clears the color buffer (using the previously set color) and depth buffer
     glClearColor(colorColor.r, colorColor.g, colorColor.b, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable(GL_SCISSOR_TEST);
 
-    GetSceneCamera()->SetOrthographic((float)viewSpace.x, (float)(viewSpace.x + viewSpace.width), (float)viewSpace.y, (float)(viewSpace.y + viewSpace.height), 0.1f, 400);
+    float left = (float)viewSpace.x;
+    float right = (float)(viewSpace.x + viewSpace.width);
+    float bottom = (float)viewSpace.y;
+    float top = (float)(viewSpace.y + viewSpace.height);
+    
+    // TODO!
+    float resize_factor = 0.75;
+    float tx = (viewSpace.width - viewSpace.width * resize_factor) / 2;
+    float ty = (viewSpace.height - viewSpace.height * resize_factor) / 2;
+
+    //GetSceneCamera()->SetOrthographic(left + tx, right - tx, bottom + ty, top - ty, 0.1f, 400);
+    if (overview_toggle == 1) 
+        GetSceneCamera()->SetOrthographic(left, right, bottom, top, 0.1f, 400);
+    else
+        GetSceneCamera()->SetOrthographic(left + tx, right - tx, bottom + ty, top - ty, 0.1f, 400);
     GetSceneCamera()->Update();
 }
 
@@ -124,6 +137,8 @@ void Tema1::Init()
 
     mouseY = 0;
     mouseX = 1;
+
+    overview_toggle = 0;
     
     // Player instantiation
     player = new Player(logicSpace);
@@ -139,12 +154,13 @@ void Tema1::FrameStart()
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    //glm::ivec2 resolution = window->GetResolution();
-    // Sets the screen area where to draw
-    //glViewport(0, 0, resolution.x, resolution.y);
-
     auto camera = GetSceneCamera();
-    camera->SetPosition(glm::vec3(translateX, translateY, 50));
+
+    // Transform translation factors from logical space to viewport space (in order to keep player centered
+    float tx_view = (float)(viewSpace.x + (viewSpace.width - viewSpace.x) * (translateX - logicSpace.x) / (logicSpace.width - logicSpace.x));
+    float ty_view = (float)(viewSpace.y + (viewSpace.height - viewSpace.y) * (translateY - logicSpace.y) / (logicSpace.height - logicSpace.y));
+
+    camera->SetPosition(glm::vec3(tx_view, ty_view, 50));
     camera->Update();
     GetCameraInput()->SetActive(false);
 }
@@ -163,8 +179,8 @@ void Tema1::Update(float deltaTimeSeconds)
       modelMatrix = visMatrix * transform2D::Translate(0, 0);
     
       // Transform mouse coordinates from viewport space to logical space
-      float mouseX_logic = logicSpace.x + (mouseX - viewSpace.x) * (logicSpace.width - logicSpace.x) / (viewSpace.width - viewSpace.x);
-      float mouseY_logic = logicSpace.y + (mouseY - viewSpace.y) * (logicSpace.height - logicSpace.y) / (viewSpace.height - viewSpace.y);
+      float mouseX_logic = (float)(logicSpace.x + (mouseX - viewSpace.x) * (logicSpace.width - logicSpace.x) / (viewSpace.width - viewSpace.x));
+      float mouseY_logic = (float)(logicSpace.y + (mouseY - viewSpace.y) * (logicSpace.height - logicSpace.y) / (viewSpace.height - viewSpace.y));
 
       float dx = mouseX_logic - logicSpace.width / 2;
       float dy = -(logicSpace.height - mouseY_logic - logicSpace.height / 2);
@@ -210,6 +226,9 @@ void Tema1::OnInputUpdate(float deltaTime, int mods)
 void Tema1::OnKeyPress(int key, int mods)
 {
     // Add key press event
+    if (key == GLFW_KEY_O) {
+        overview_toggle = 1 - overview_toggle;
+    }
 }
 
 

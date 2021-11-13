@@ -49,6 +49,8 @@ namespace m1
         int deltaX;
         int deltaY;
         Player* player;
+
+        int overview_toggle; // Toggles between showing whole map / a part of it; Debug purposes
     };
 
 }   // namespace m1
