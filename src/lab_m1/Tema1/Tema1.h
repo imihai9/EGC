@@ -50,6 +50,7 @@ namespace m1
         int deltaY;
         Player* player;
 
+        float resize_factor;
         int overview_toggle; // Toggles between showing whole map / a part of it; Debug purposes
     };
 

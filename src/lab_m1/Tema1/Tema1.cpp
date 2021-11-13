@@ -98,8 +98,6 @@ void Tema1::SetViewportArea(const ViewportSpace& viewSpace, glm::vec3 colorColor
     float bottom = (float)viewSpace.y;
     float top = (float)(viewSpace.y + viewSpace.height);
     
-    // TODO!
-    float resize_factor = 0.75;
     float tx = (viewSpace.width - viewSpace.width * resize_factor) / 2;
     float ty = (viewSpace.height - viewSpace.height * resize_factor) / 2;
 
@@ -125,9 +123,8 @@ void Tema1::Init()
     logicSpace.width = 1280;   // logic width
     logicSpace.height = 720;  // logic height
 
-    float squareSide = 500;
-    glm::vec3 corner = glm::vec3(logicSpace.width/2 - squareSide/2, logicSpace.height/2 - squareSide/2, 0);
-    Mesh* square1 = object2D::CreateRectangle("square1", corner, squareSide, squareSide, glm::vec3(0.75f, 0.87f, 0.93f), true);
+    glm::vec3 corner = glm::vec3(logicSpace.x, logicSpace.y, 0);
+    Mesh* square1 = object2D::CreateRectangle("square1", corner, logicSpace.width, logicSpace.height, glm::vec3(0.75f, 0.87f, 0.93f), true);
     AddMeshToList(square1);
 
     translateX = 0;
@@ -138,6 +135,7 @@ void Tema1::Init()
     mouseY = 0;
     mouseX = 1;
 
+    resize_factor = 0.75;
     overview_toggle = 0;
     
     // Player instantiation
