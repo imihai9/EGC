@@ -142,6 +142,11 @@ void Tema1::FrameStart()
     //glm::ivec2 resolution = window->GetResolution();
     // Sets the screen area where to draw
     //glViewport(0, 0, resolution.x, resolution.y);
+
+    auto camera = GetSceneCamera();
+    camera->SetPosition(glm::vec3(translateX, translateY, 50));
+    camera->Update();
+    GetCameraInput()->SetActive(false);
 }
 
 void Tema1::Update(float deltaTimeSeconds)
@@ -161,8 +166,8 @@ void Tema1::Update(float deltaTimeSeconds)
       float mouseX_logic = logicSpace.x + (mouseX - viewSpace.x) * (logicSpace.width - logicSpace.x) / (viewSpace.width - viewSpace.x);
       float mouseY_logic = logicSpace.y + (mouseY - viewSpace.y) * (logicSpace.height - logicSpace.y) / (viewSpace.height - viewSpace.y);
 
-      float dx = mouseX_logic - logicSpace.width / 2 - translateX;
-      float dy = -(logicSpace.height - mouseY_logic - logicSpace.height / 2 - translateY);
+      float dx = mouseX_logic - logicSpace.width / 2;
+      float dy = -(logicSpace.height - mouseY_logic - logicSpace.height / 2);
       rotationAngle = atan2(dx, dy);
 
       player->modelMatrix = visMatrix *

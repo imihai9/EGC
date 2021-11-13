@@ -27,7 +27,7 @@ namespace m1
         void OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) override;
         void OnWindowResize(int width, int height) override;
 
-        void InitEntity(Entity *entity);
+        void InitEntity(Entity* entity);
         void RenderEntity(Entity* entity);
 
         // Viewport related
@@ -48,7 +48,7 @@ namespace m1
         int mouseX, mouseY;
         int deltaX;
         int deltaY;
-        Player *player;
+        Player* player;
     };
 
 }   // namespace m1

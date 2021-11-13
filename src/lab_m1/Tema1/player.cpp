@@ -9,7 +9,7 @@
 using namespace std;
 
 Player::Player(LogicSpace logicSpace) {
-    meshCount = 3; 
+    meshCount = 3;
     // Position player in the middle of the logic space
     float x = logicSpace.width / 2, y = logicSpace.height / 2;
     circleCenters = { glm::vec3(x, y, 0),
@@ -19,11 +19,11 @@ Player::Player(LogicSpace logicSpace) {
 }
 
 void Player::Create() {
-   // int squareSide = 200;
-   // glm::vec3 corner = glm::vec3(-squareSide / 2, -squareSide / 2, 0);
+    // int squareSide = 200;
+    // glm::vec3 corner = glm::vec3(-squareSide / 2, -squareSide / 2, 0);
 
-    //Mesh* square1 = object2D::CreateSquare("square1", corner, squareSide, glm::vec3(1, 0, 0), true);
-   // meshes.push_back(square1);
+     //Mesh* square1 = object2D::CreateSquare("square1", corner, squareSide, glm::vec3(1, 0, 0), true);
+    // meshes.push_back(square1);
 
 
     Mesh* circle;
