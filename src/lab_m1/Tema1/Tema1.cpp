@@ -123,13 +123,6 @@ void Tema1::Init()
     logicSpace.width = 1280;   // logic width
     logicSpace.height = 720;  // logic height
 
-    glm::vec3 corner = glm::vec3(logicSpace.x, logicSpace.y, 0);
-    Mesh* square1 = object2D::CreateRectangle("square1", corner, logicSpace.width, logicSpace.height, glm::vec3(0.75f, 0.87f, 0.93f), true);
-    AddMeshToList(square1);
-
-    translateX = 0;
-    translateY = 0;
-
     rotationAngle = 0;
 
     mouseY = 0;
@@ -137,12 +130,14 @@ void Tema1::Init()
 
     resize_factor = 0.75;
     overview_toggle = 0;
-    
+
     // Player instantiation
     player = new Player(logicSpace);
     InitEntity(player);
 
-    // Position player in the middle of the logic space
+    // Map instantiation
+    map = new Map(logicSpace);
+    InitEntity(map);
 }
 
 
@@ -155,13 +150,14 @@ void Tema1::FrameStart()
     auto camera = GetSceneCamera();
 
     // Transform translation factors from logical space to viewport space (in order to keep player centered
-    float tx_view = (float)(viewSpace.x + (viewSpace.width - viewSpace.x) * (translateX - logicSpace.x) / (logicSpace.width - logicSpace.x));
-    float ty_view = (float)(viewSpace.y + (viewSpace.height - viewSpace.y) * (translateY - logicSpace.y) / (logicSpace.height - logicSpace.y));
+    float tx_view = (float)(viewSpace.x + (viewSpace.width - viewSpace.x) * (player->translateX - logicSpace.x) / (logicSpace.width - logicSpace.x));
+    float ty_view = (float)(viewSpace.y + (viewSpace.height - viewSpace.y) * (player->translateY - logicSpace.y) / (logicSpace.height - logicSpace.y));
 
     camera->SetPosition(glm::vec3(tx_view, ty_view, 50));
     camera->Update();
     GetCameraInput()->SetActive(false);
 }
+
 
 void Tema1::Update(float deltaTimeSeconds)
 {
@@ -174,26 +170,29 @@ void Tema1::Update(float deltaTimeSeconds)
       // Compute the 2D visualization matrix
       visMatrix = VisualizationTransf2D(logicSpace, viewSpace);
 
-      modelMatrix = visMatrix * transform2D::Translate(0, 0);
-    
       // Transform mouse coordinates from viewport space to logical space
       float mouseX_logic = (float)(logicSpace.x + (mouseX - viewSpace.x) * (logicSpace.width - logicSpace.x) / (viewSpace.width - viewSpace.x));
       float mouseY_logic = (float)(logicSpace.y + (mouseY - viewSpace.y) * (logicSpace.height - logicSpace.y) / (viewSpace.height - viewSpace.y));
 
+
+      // Check for collisions
+      if (CheckCollisionRectCircleInside(map->getCollisionBox(), player->getCollisionBox()))
+          player->translateX = 0;
+
+      // Create model matrix
       float dx = mouseX_logic - logicSpace.width / 2;
       float dy = -(logicSpace.height - mouseY_logic - logicSpace.height / 2);
       rotationAngle = atan2(dx, dy);
 
       player->modelMatrix = visMatrix *
-          transform2D::Translate(translateX, translateY) *
+          transform2D::Translate(player->translateX, player->translateY) *
           transform2D::Translate(logicSpace.width / 2, logicSpace.height / 2) *
           transform2D::Rotate(rotationAngle) *
           transform2D::Translate(-logicSpace.width / 2, -logicSpace.height / 2);
 
-    RenderEntity(player);
 
-    RenderMesh2D(meshes["square1"], shaders["VertexColor"], modelMatrix);
-    
+    RenderEntity(player);
+    RenderEntity(map);
 }
 
 void Tema1::FrameEnd()
@@ -210,14 +209,14 @@ void Tema1::OnInputUpdate(float deltaTime, int mods)
 {
     const float translateSpeed = 200.f;
     if (window->KeyHold(GLFW_KEY_S))
-        translateY -= deltaTime * translateSpeed;
+        player->translateY -= deltaTime * translateSpeed;
     else if (window->KeyHold(GLFW_KEY_W))
-        translateY += deltaTime * translateSpeed;
+        player->translateY += deltaTime * translateSpeed;
 
     if (window->KeyHold(GLFW_KEY_A))
-        translateX -= deltaTime * translateSpeed;
+        player->translateX -= deltaTime * translateSpeed;
     else if (window->KeyHold(GLFW_KEY_D))
-        translateX += deltaTime * translateSpeed;
+        player->translateX += deltaTime * translateSpeed;
 }
 
 

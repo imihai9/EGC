@@ -1,8 +1,10 @@
 #pragma once
 
 #include "components/simple_scene.h"
-#include "lab_m1/Tema1/player.h"
 #include "lab_m1/Tema1/space.h"
+#include "lab_m1/Tema1/map.h"
+#include "lab_m1/Tema1/player.h"
+
 namespace m1
 {
     class Tema1 : public gfxc::SimpleScene
@@ -42,16 +44,16 @@ namespace m1
     protected:
         float cx, cy;
         glm::mat3 modelMatrix;
-        float translateX, translateY;
         float scaleX, scaleY;
         float rotationAngle;
         int mouseX, mouseY;
         int deltaX;
         int deltaY;
-        Player* player;
-
         float resize_factor;
-        int overview_toggle; // Toggles between showing whole map / a part of it; Debug purposes
+        int overview_toggle; // Toggles between showing whole map / a part of it;  For debug purposes
+
+        Player* player;
+        Map* map;
     };
 
 }   // namespace m1
