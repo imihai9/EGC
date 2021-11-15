@@ -14,6 +14,7 @@ public:
 	float translateX;
 	float translateY;
 
+	glm::vec2 lastTranslation; // used for undoing translation on collision detection
 	std::vector<Mesh*> const& getMeshes();
 	struct CircleCB* getCollisionBox(); // updates and returns the collision box
 

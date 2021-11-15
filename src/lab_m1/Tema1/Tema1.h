@@ -4,6 +4,7 @@
 #include "lab_m1/Tema1/space.h"
 #include "lab_m1/Tema1/map.h"
 #include "lab_m1/Tema1/player.h"
+#include "lab_m1/Tema1/obstacle.h"
 
 namespace m1
 {
@@ -51,9 +52,11 @@ namespace m1
         int deltaY;
         float resize_factor;
         int overview_toggle; // Toggles between showing whole map / a part of it;  For debug purposes
+        float translateSpeed = 100.f;
 
         Player* player;
         Map* map;
+        Obstacle* obst;
     };
 
 }   // namespace m1

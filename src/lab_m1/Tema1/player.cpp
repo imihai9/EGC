@@ -16,18 +16,18 @@ Player::Player(LogicSpace logicSpace) {
 
     translateX = translateY = 0;
     
-    collisionBox = {largeCircleRadius + 10, glm::vec2(circleCenters[0].x, circleCenters[0].y)};
-
+    collisionBox = {largeCircleRadius, glm::vec2(circleCenters[0].x, circleCenters[0].y)};
+    lastTranslation = glm::vec2(0);
     modelMatrix = glm::mat3(1);
 }
 
 void Player::Create() {
     Mesh* circle;
-    circle = object2D::CreateCircle("player_circle1", glm::vec3(circleCenters[1], 0), smallCircleRadius, glm::vec3(1, 0.95f, 0.5f));
+    circle = object::CreateCircle("player_circle1", glm::vec3(circleCenters[1], 0), smallCircleRadius, glm::vec3(1, 0.95f, 0.5f));
     meshes.push_back(circle);
-    circle = object2D::CreateCircle("player_circle2", glm::vec3(circleCenters[2], 0), smallCircleRadius, glm::vec3(1, 0.95f, 0.5f));
+    circle = object::CreateCircle("player_circle2", glm::vec3(circleCenters[2], 0), smallCircleRadius, glm::vec3(1, 0.95f, 0.5f));
     meshes.push_back(circle);
-    circle = object2D::CreateCircle("player_circle0", glm::vec3(circleCenters[0], 0), largeCircleRadius, glm::vec3(0.1f, 0.63f, 0.88f));
+    circle = object::CreateCircle("player_circle0", glm::vec3(circleCenters[0], 0), largeCircleRadius, glm::vec3(0.1f, 0.63f, 0.88f));
     meshes.push_back(circle);
 }
 

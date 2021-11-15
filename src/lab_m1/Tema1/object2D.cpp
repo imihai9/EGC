@@ -8,7 +8,7 @@
 #include "utils/gl_utils.h"
 
 
-Mesh* object2D::CreateSquare(
+Mesh* object::CreateSquare(
     const std::string& name,
     glm::vec3 leftBottomCorner,
     float length,
@@ -41,7 +41,7 @@ Mesh* object2D::CreateSquare(
     return square;
 }
 
-Mesh* object2D::CreateRectangle(
+Mesh* object::CreateRectangle(
     const std::string& name,
     glm::vec3 leftBottomCorner,
     float x_size,
@@ -75,7 +75,7 @@ Mesh* object2D::CreateRectangle(
     return square;
 }
 
-Mesh* object2D::CreateCircle(
+Mesh* object::CreateCircle(
     const std::string& name,
     glm::vec3 center,
     float radius,
