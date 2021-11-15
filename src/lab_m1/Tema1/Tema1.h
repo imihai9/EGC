@@ -1,10 +1,12 @@
 #pragma once
 
 #include "components/simple_scene.h"
-#include "lab_m1/Tema1/space.h"
-#include "lab_m1/Tema1/map.h"
-#include "lab_m1/Tema1/player.h"
-#include "lab_m1/Tema1/obstacle.h"
+#include "space.h"
+#include "map.h"
+#include "player.h"
+#include "obstacle.h"
+#include "projectile.h"
+#include <vector>
 
 namespace m1
 {
@@ -30,6 +32,7 @@ namespace m1
         void OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) override;
         void OnWindowResize(int width, int height) override;
 
+        void GenerateObstacle(glm::vec3 leftCorner, glm::vec2 obstSize, glm::vec3 obstColor);
         void InitEntity(Entity* entity);
         void RenderEntity(Entity* entity);
 
@@ -53,10 +56,15 @@ namespace m1
         float resize_factor;
         int overview_toggle; // Toggles between showing whole map / a part of it;  For debug purposes
         float translateSpeed = 100.f;
+        float projectileSpeed = 0.f;
+        bool projectileLaunched;
 
         Player* player;
         Map* map;
-        Obstacle* obst;
+        std::vector<Obstacle*> obstacles;
+        Projectile* projectile;
+        std::vector<Projectile::ProjectileData> projData;
+
     };
 
 }   // namespace m1

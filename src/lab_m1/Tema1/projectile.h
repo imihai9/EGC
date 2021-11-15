@@ -14,10 +14,17 @@ public:
 	std::vector<Mesh*> const& getMeshes();
 	struct CircleCB* getCollisionBox(); // updates and returns the collision box
 
+	float size;
+
+	struct ProjectileData {
+		glm::vec2 initialPos;
+		float rotationAngle;
+		float moveFactor;
+	};
 private:
 	std::vector<Mesh*> meshes;
 	LogicSpace logicSpace;
-	float size;
+
 	glm::vec3 color;
 
 	CircleCB collisionBox;

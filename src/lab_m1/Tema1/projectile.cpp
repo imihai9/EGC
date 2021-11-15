@@ -8,7 +8,7 @@ using namespace std;
 
 Projectile::Projectile(LogicSpace logicSpace) {
     this->logicSpace = logicSpace;
-    this->size = 10.f;
+    this->size = 15.f;
     this->color = glm::vec3(0, 0, 0);
 
     modelMatrix = glm::mat3(1);
@@ -16,7 +16,7 @@ Projectile::Projectile(LogicSpace logicSpace) {
 
 void Projectile::Create() {
     // Initial position; will be translated to the center of player's position when shooting occurs
-    glm::vec3 leftCorner = glm::vec3(logicSpace.x, logicSpace.y, 0);
+    glm::vec3 leftCorner = glm::vec3(logicSpace.x - size / 2, logicSpace.y-size / 2, 0);
     Mesh* square = object::CreateSquare("projectile_rect", leftCorner, size, color, true);
     meshes.push_back(square);
 

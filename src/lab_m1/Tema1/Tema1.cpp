@@ -1,6 +1,4 @@
 #include "lab_m1/Tema1/Tema1.h"
-
-#include <vector>
 #include <iostream>
 
 #include "lab_m1/Tema1/transform2D.h"
@@ -37,6 +35,12 @@ void Tema1::RenderEntity(Entity* entity) {
     for (Mesh* m : entityMeshes) {
         RenderMesh2D(m, shaders["VertexColor"], entity->modelMatrix);
     }
+}
+
+void Tema1::GenerateObstacle(glm::vec3 leftCorner, glm::vec2 obstSize, glm::vec3 obstColor) {
+    Obstacle* obst = new Obstacle(logicSpace, leftCorner, obstSize, obstColor);
+    InitEntity(obst);
+    obstacles.push_back(obst);
 }
 
 // 2D visualization matrix
@@ -129,9 +133,17 @@ void Tema1::Init()
     map = new Map(logicSpace);
     InitEntity(map);
 
-    // Obstacle object instantiation
-    obst = new Obstacle(logicSpace);
-    InitEntity(obst);
+    // Obstacle objects instantiation
+    glm::vec3 color = glm::vec3(0.2f, 0.5f, 1.f);
+    GenerateObstacle(glm::vec3(logicSpace.x + 200, logicSpace.y + 300, 0), glm::vec2(150, 200), color);
+    GenerateObstacle(glm::vec3(logicSpace.x + 400, logicSpace.y + 150, 0), glm::vec2(300, 50), color);
+    GenerateObstacle(glm::vec3(logicSpace.x + 1000, logicSpace.y + 300, 0), glm::vec2(50, 300), color);
+    GenerateObstacle(glm::vec3(logicSpace.x + 500, logicSpace.y + 500, 0), glm::vec2(100, 100), color);
+    GenerateObstacle(glm::vec3(logicSpace.x + 800, logicSpace.y + 250, 0), glm::vec2(50, 300), color);
+
+    // Projectile instantiation
+    projectile = new Projectile(logicSpace);
+    InitEntity(projectile);
 }
 
 void Tema1::FrameStart()
@@ -150,10 +162,12 @@ void Tema1::FrameStart()
     }
     
     { // {Player - Obstacles}
-        glm::vec2 penetration = CheckCollisionRectCircle(obst->getCollisionBox(), player->getCollisionBox());
-        if (penetration != glm::vec2(0)) {
-            player->translateX += penetration.x;
-            player->translateY += penetration.y;
+        for (Obstacle* obst : obstacles) {
+            glm::vec2 penetration = CheckCollisionRectCircle(obst->getCollisionBox(), player->getCollisionBox());
+            if (penetration != glm::vec2(0)) {
+                player->translateX += penetration.x;
+                player->translateY += penetration.y;
+            }
         }
     }
 
@@ -190,26 +204,43 @@ void Tema1::Update(float deltaTimeSeconds)
       float dy = -(logicSpace.height - mouseY_logic - logicSpace.height / 2);
       rotationAngle = atan2(dx, dy);
 
+      // Model matrices generation + Rendering
+      // Player
       player->modelMatrix = visMatrix *
           transform2D::Translate(player->translateX, player->translateY) *
           transform2D::Translate(logicSpace.width / 2, logicSpace.height / 2) *
           transform2D::Rotate(rotationAngle) *
           transform2D::Translate(-logicSpace.width / 2, -logicSpace.height / 2);
 
-    
-      map->modelMatrix = visMatrix;
       RenderEntity(player);
-      RenderEntity(obst);
+
+      // Obstacles
+      for (Obstacle* obst : obstacles) {
+          obst->modelMatrix = visMatrix;
+          RenderEntity(obst);
+      }
+
+      // Projectile
+      for (int i = 0; i < projData.size(); i++) {
+          glm::mat3 projectile_modelMatrix = glm::mat3(1);
+          projData[i].moveFactor += 100.f * deltaTimeSeconds;
+          projectile_modelMatrix = visMatrix *
+              transform2D::Translate(cos(glm::pi<float>() * 1.5f + projData[i].rotationAngle) * projData[i].moveFactor,
+                                     sin(glm::pi<float>() * 1.5f + projData[i].rotationAngle) * projData[i].moveFactor) *
+              transform2D::Translate(projData[i].initialPos.x, 
+                                     projData[i].initialPos.y) *
+              transform2D::Rotate(projData[i].rotationAngle);
+          RenderMesh2D(projectile->getMeshes()[0], shaders["VertexColor"], projectile_modelMatrix);
+      }
+
+      // Map
+      map->modelMatrix = visMatrix;
       RenderEntity(map);
-
-
 }
 
 void Tema1::FrameEnd()
 {
 }
-
-
 
 void Tema1::OnInputUpdate(float deltaTime, int mods)
 {
@@ -250,6 +281,13 @@ void Tema1::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
 {
     // Add mouse button press event
+    if (button == 1) {
+        // Launch new projectile with current player orientation
+        projData.push_back({ glm::vec2(logicSpace.width / 2 + player->translateX,
+                                       logicSpace.height / 2 + player->translateY),
+                             rotationAngle,
+                             0 });
+    }
 }
 
 

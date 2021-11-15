@@ -6,7 +6,7 @@
 #include "collision.h"
 
 class Player : public Entity
-{
+{ //TODO: enlarge collision box, move center towards eyes(/hands)
 public:
 	Player(LogicSpace logicSpace);
 	void Create();
