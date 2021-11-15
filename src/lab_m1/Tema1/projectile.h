@@ -20,6 +20,7 @@ public:
 		glm::vec2 initialPos;
 		float rotationAngle;
 		float moveFactor;
+		CircleCB collisionBox;
 	};
 private:
 	std::vector<Mesh*> meshes;

@@ -153,7 +153,7 @@ void Tema1::FrameStart()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Collision detection
-    { // {Player - Map edges}
+    { // {Player - Map walls}
         glm::vec2 penetration = CheckCollisionRectCircleInside(map->getCollisionBox(), player->getCollisionBox());
         if (penetration != glm::vec2(0)) {
             player->translateX += penetration.x;
@@ -167,6 +167,33 @@ void Tema1::FrameStart()
             if (penetration != glm::vec2(0)) {
                 player->translateX += penetration.x;
                 player->translateY += penetration.y;
+            }
+        }
+    }
+
+    { // {Projectile - Map}
+        bool penOccured = false;
+        vector<Projectile::ProjectileData>::iterator it;
+        for (it = projData.begin(); it < projData.end(); ) {
+            // {Projectile - Map walls}
+            glm::vec2 penetration = CheckCollisionRectCircleInside(map->getCollisionBox(), &(*it).collisionBox);
+            if (penetration != glm::vec2(0))
+                it = projData.erase(it);
+            else { // {Projectile - Obstacles}
+                for (Obstacle* obst : obstacles) {
+                    glm::vec2 penetration = CheckCollisionRectCircle(obst->getCollisionBox(), &(*it).collisionBox);
+                    if (penetration != glm::vec2(0)) {
+                        penOccured = true;
+                        break;
+                    }
+                }
+
+                if (penOccured) {
+                    it = projData.erase(it);
+                    penOccured = false;
+                }
+                else
+                    it++;
             }
         }
     }
@@ -214,23 +241,28 @@ void Tema1::Update(float deltaTimeSeconds)
 
       RenderEntity(player);
 
+      // Projectile
+      for (int i = 0; i < projData.size(); i++) {
+          glm::mat3 projectile_modelMatrix = glm::mat3(1);
+          projData[i].moveFactor += projSpeedMultiplier * deltaTimeSeconds;
+
+          float tx = cos(glm::pi<float>() * 1.5f + projData[i].rotationAngle) * projData[i].moveFactor;
+          float ty = sin(glm::pi<float>() * 1.5f + projData[i].rotationAngle) * projData[i].moveFactor;
+
+          projectile_modelMatrix = visMatrix *
+              transform2D::Translate(tx, ty) *
+              transform2D::Translate(projData[i].initialPos.x, 
+                                     projData[i].initialPos.y) *
+              transform2D::Rotate(projData[i].rotationAngle);
+
+          RenderMesh2D(projectile->getMeshes()[0], shaders["VertexColor"], projectile_modelMatrix);
+          projData[i].collisionBox.center = glm::vec2(projData[i].initialPos.x + tx, projData[i].initialPos.y + ty);
+      }
+
       // Obstacles
       for (Obstacle* obst : obstacles) {
           obst->modelMatrix = visMatrix;
           RenderEntity(obst);
-      }
-
-      // Projectile
-      for (int i = 0; i < projData.size(); i++) {
-          glm::mat3 projectile_modelMatrix = glm::mat3(1);
-          projData[i].moveFactor += 100.f * deltaTimeSeconds;
-          projectile_modelMatrix = visMatrix *
-              transform2D::Translate(cos(glm::pi<float>() * 1.5f + projData[i].rotationAngle) * projData[i].moveFactor,
-                                     sin(glm::pi<float>() * 1.5f + projData[i].rotationAngle) * projData[i].moveFactor) *
-              transform2D::Translate(projData[i].initialPos.x, 
-                                     projData[i].initialPos.y) *
-              transform2D::Rotate(projData[i].rotationAngle);
-          RenderMesh2D(projectile->getMeshes()[0], shaders["VertexColor"], projectile_modelMatrix);
       }
 
       // Map
@@ -283,10 +315,21 @@ void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
     // Add mouse button press event
     if (button == 1) {
         // Launch new projectile with current player orientation
-        projData.push_back({ glm::vec2(logicSpace.width / 2 + player->translateX,
-                                       logicSpace.height / 2 + player->translateY),
-                             rotationAngle,
-                             0 });
+        Projectile::ProjectileData proj;
+        proj.rotationAngle = this->rotationAngle;
+        proj.moveFactor = 0.f;
+
+        float initialPos_x = logicSpace.width / 2 + player->translateX +
+          cos(glm::pi<float>() * 1.5f + rotationAngle) * player->largeCircleRadius;
+        float initialPos_y = logicSpace.height / 2 + player->translateY +
+          sin(glm::pi<float>() * 1.5f + rotationAngle) * player->largeCircleRadius;
+        proj.initialPos = glm::vec2(initialPos_x, initialPos_y);
+
+        // Raza cerc coliziune = diagonala proiectil / 2
+        proj.collisionBox = { (float)(glm::sqrt(2) * projectile->size / 2),
+                              proj.initialPos};
+       
+        projData.push_back(proj);
     }
 }
 

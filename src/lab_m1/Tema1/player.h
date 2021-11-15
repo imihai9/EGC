@@ -18,13 +18,13 @@ public:
 	std::vector<Mesh*> const& getMeshes();
 	struct CircleCB* getCollisionBox(); // updates and returns the collision box
 
+	float smallCircleRadius = 10;
+	float largeCircleRadius = 20;
+
 private:
 	int meshCount; // number of meshes used to represent the player model
 	std::vector<glm::vec2> circleCenters;
 	std::vector<Mesh*> meshes;
-
-	float smallCircleRadius = 10;
-	float largeCircleRadius = 20;
 
 	CircleCB collisionBox;
 };

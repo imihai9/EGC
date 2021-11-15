@@ -56,7 +56,7 @@ namespace m1
         float resize_factor;
         int overview_toggle; // Toggles between showing whole map / a part of it;  For debug purposes
         float translateSpeed = 100.f;
-        float projectileSpeed = 0.f;
+        const float projSpeedMultiplier = 200.f;
         bool projectileLaunched;
 
         Player* player;
