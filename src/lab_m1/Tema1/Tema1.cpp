@@ -4,12 +4,6 @@
 #include "lab_m1/Tema1/transform2D.h"
 #include "lab_m1/Tema1/object2D.h"
 
-/* TODOs:
-- Somehow, place the init and render methods in PLAYER.H. / ..
-- Make player, enemy, ... classes inherit / override CreateMesh
-
-*/
-
 using namespace std;
 using namespace m1;
 
@@ -19,6 +13,12 @@ Tema1::Tema1()
 
 Tema1::~Tema1()
 {
+}
+
+float random(float min, float max) {
+    float random = ((float)rand()) / (float)RAND_MAX;
+    float range = max - min;
+    return (random * range) + min;
 }
 
 void Tema1::InitEntity(Entity* entity) {
@@ -125,6 +125,8 @@ void Tema1::Init()
     resize_factor = 0.75;
     overview_toggle = 0;
 
+    lastEnemyWaveTime = -1.f;
+
     // Player instantiation
     player = new Player(logicSpace);
     InitEntity(player);
@@ -132,9 +134,6 @@ void Tema1::Init()
     // Enemy object instantiation
     enemy = new Enemy(logicSpace);
     InitEntity(enemy);
-    enemyData.initialPos = glm::vec2(400, 400); // spawn point
-    enemyData.currentPos = glm::vec2(400, 400);
-    enemyData.moveFactor = 0;
 
     // Map instantiation
     map = new Map(logicSpace);
@@ -153,28 +152,12 @@ void Tema1::Init()
     InitEntity(projectile);
 }
 
-void Tema1::FrameStart()
-{
-    // Clears the color buffer (using the previously set color) and depth buffer
-    glClearColor(0, 0, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Collision detection
-    { // {Player - Map walls}
-        glm::vec2 penetration = CheckCollisionRectCircleInside(map->getCollisionBox(), player->getCollisionBox());
-        if (penetration != glm::vec2(0)) {
-            player->translateX += penetration.x;
-            player->translateY += penetration.y;
-        }
-    }
-    
-    { // {Player - Obstacles}
-        for (Obstacle* obst : obstacles) {
-            glm::vec2 penetration = CheckCollisionRectCircle(obst->getCollisionBox(), player->getCollisionBox());
-            if (penetration != glm::vec2(0)) {
-                player->translateX += penetration.x;
-                player->translateY += penetration.y;
-            }
+void Tema1::HandleCollisions() {
+    { // {Player - Enemy}
+        for (Enemy::EnemyData enemyDataObj : enemyData) {
+            bool collided = CheckCollisionCircleCircle (&enemyDataObj.collisionBox, player->getCollisionBox());
+            if (collided)
+                playerHealth -= enemyCollisionDmg;
         }
     }
 
@@ -205,11 +188,69 @@ void Tema1::FrameStart()
         }
     }
 
+    { // {Projectile - Enemy}
+        vector<Projectile::ProjectileData>::iterator it_p;
+        vector<Enemy::EnemyData>::iterator it_e;
+        for (it_p = projData.begin(); it_p < projData.end(); ) { // for each projectile
+            bool collided = false;
+            for (it_e = enemyData.begin(); it_e < enemyData.end(); ) { // for each enemy
+                collided = CheckCollisionCircleCircle(&(*it_p).collisionBox, &(*it_e).collisionBox);
+                if (collided) {
+                    it_e = enemyData.erase(it_e);
+                    it_p = projData.erase(it_p);
+                    break;
+                }
+                else {
+                    it_e++;
+                }
+            }
 
+            if (!collided)
+                it_p++;
+        }
+    }
+
+    { // {Player - Map walls}
+        glm::vec2 penetration = CheckCollisionRectCircleInside(map->getCollisionBox(), player->getCollisionBox());
+        if (penetration != glm::vec2(0)) {
+            player->translateX += penetration.x;
+            player->translateY += penetration.y;
+        }
+    }
+
+    { // {Player - Obstacles}
+        for (Obstacle* obst : obstacles) {
+            glm::vec2 penetration = CheckCollisionRectCircle(obst->getCollisionBox(), player->getCollisionBox());
+            if (penetration != glm::vec2(0)) {
+                player->translateX += penetration.x;
+                player->translateY += penetration.y;
+            }
+        }
+    }
+
+    { // {Enemy - Map walls}
+        vector<Enemy::EnemyData>::iterator it;
+        for (it = enemyData.begin(); it < enemyData.end(); it++) {
+            glm::vec2 penetration = CheckCollisionRectCircleInside(map->getCollisionBox(), &(*it).collisionBox);
+            if (penetration != glm::vec2(0)) {
+                (*it).currentPos += penetration;
+            }
+        }
+    }
+}
+
+void Tema1::FrameStart()
+{
+    HandleCollisions();
+
+    // Clears the color buffer (using the previously set color) and depth buffer
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  
     // Camera setup
     auto camera = GetSceneCamera();
 
-    // transform translation factors from logical space to viewport space (in order to keep player centered
+    // Transform translation factors from logical space to viewport space (in order to keep player centered)
     float tx_view = (float)(viewSpace.x + (viewSpace.width - viewSpace.x) * (player->translateX - logicSpace.x) / (logicSpace.width - logicSpace.x));
     float ty_view = (float)(viewSpace.y + (viewSpace.height - viewSpace.y) * (player->translateY - logicSpace.y) / (logicSpace.height - logicSpace.y));
 
@@ -249,36 +290,66 @@ void Tema1::Update(float deltaTimeSeconds)
           transform2D::Translate(-logicSpace.width / 2, -logicSpace.height / 2);
 
       RenderEntity(player);
-
+     
       // Enemy
       glm::mat3 enemyModelMatrix = glm::mat3(1);
+      for (int i = 0; i < enemyData.size(); i++) {
+          // -- player - enemy vector
+          // -- rotation
+          float dx_rot = (logicSpace.width / 2 + player->translateX) - enemyData[i].currentPos.x;
+          float dy_rot = (logicSpace.height / 2 + player->translateY) - enemyData[i].currentPos.y;
+          enemyData[i].rotationAngle = atan2(dx_rot, -dy_rot);
 
-      enemyData.moveFactor += enemySpeedMultiplier * deltaTimeSeconds;
+          // -- translation
+          float tx = cos(glm::pi<float>() * 1.5f + enemyData[i].rotationAngle);
+          float ty = sin(glm::pi<float>() * 1.5f + enemyData[i].rotationAngle);
 
-      // -- player position - enemy position
-      
-      // -- rotation
-      float dx_rot =  (logicSpace.width / 2 + player->translateX) - enemyData.currentPos.x;
-      float dy_rot =  (logicSpace.height / 2 + player->translateY) - enemyData.currentPos.y;
-      enemyData.rotationAngle = atan2(dx_rot, -dy_rot);
+          enemyData[i].currentPos.x += tx * enemyData[i].speedMultiplier * deltaTimeSeconds;
+          enemyData[i].currentPos.y += ty * enemyData[i].speedMultiplier * deltaTimeSeconds;
 
-      // -- translation
-      float tx = cos(glm::pi<float>() * 1.5f + enemyData.rotationAngle);
-      float ty = sin(glm::pi<float>() * 1.5f + enemyData.rotationAngle);
+          enemyModelMatrix = visMatrix *
+              transform2D::Translate(enemyData[i].currentPos.x, enemyData[i].currentPos.y) *
+              transform2D::Rotate(enemyData[i].rotationAngle);
 
-      enemyData.currentPos.x += tx * enemySpeedMultiplier * deltaTimeSeconds;
-      enemyData.currentPos.y += ty * enemySpeedMultiplier * deltaTimeSeconds;
+          vector<Mesh*> enemyMeshes = enemy->getMeshes();
+          for (int i = 0; i < enemyMeshes.size(); i++) {
+              RenderMesh2D(enemyMeshes[i], shaders["VertexColor"], enemyModelMatrix);
+          }
 
-      enemyModelMatrix = visMatrix *
-          transform2D::Translate(enemyData.currentPos.x, enemyData.currentPos.y) *
-          transform2D::Rotate(enemyData.rotationAngle);
-
-     // RenderEntity(enemy, enemyModelMatrix);
-      vector<Mesh*> enemyMeshes = enemy->getMeshes();
-      for (int i = 0; i < enemyMeshes.size(); i++) {
-          RenderMesh2D(enemyMeshes[i], shaders["VertexColor"], enemyModelMatrix);
+          enemyData[i].collisionBox.center = glm::vec2(enemyData[i].currentPos.x, enemyData[i].currentPos.y);
       }
+       
+      // Spawn new enemy wave (5 randomly placed enemies) at start & every 5s
+      float elapsedTime = Engine::GetElapsedTime();
 
+      if (lastEnemyWaveTime == -1.f || elapsedTime - lastEnemyWaveTime >= 5.f) {
+          lastEnemyWaveTime = elapsedTime;
+          Enemy::EnemyData newEnemyData;
+
+          float player_pos_x = player->translateX + logicSpace.width / 2;
+          float player_pos_y = player->translateY + logicSpace.height / 2;
+
+          for (int i = 0; i < 5; i++) {
+              RectCB* map_cb = map->getCollisionBox();
+              float initial_x, initial_y;
+
+              // Don't spawn around player
+              do {
+                  initial_x = random(map_cb->pos_x - enemy->initial_tx * glm::sqrt(2),
+                      map_cb->width);
+
+                  initial_y = random(map_cb->pos_y - enemy->initial_ty * glm::sqrt(2),
+                      map_cb->height);
+              } while (abs(initial_x - player_pos_x) < 100 && abs(initial_y - player_pos_y) < 100);
+
+              newEnemyData.initialPos = glm::vec2(initial_x, initial_y); // spawn point
+              newEnemyData.currentPos = newEnemyData.initialPos;
+              newEnemyData.speedMultiplier = random(50.f, 150.f);
+
+              newEnemyData.collisionBox.radius = (float)(25 * glm::sqrt(2));
+              enemyData.push_back(newEnemyData);
+          }
+      }
 
       // Projectile
       for (int i = 0; i < projData.size(); i++) {
@@ -316,14 +387,14 @@ void Tema1::FrameEnd()
 void Tema1::OnInputUpdate(float deltaTime, int mods)
 {
     if (window->KeyHold(GLFW_KEY_S))
-        player->translateY -= deltaTime * translateSpeed;
+        player->translateY -= deltaTime * playerSpeed;
     else if (window->KeyHold(GLFW_KEY_W))
-        player->translateY += deltaTime * translateSpeed;
+        player->translateY += deltaTime * playerSpeed;
 
     if (window->KeyHold(GLFW_KEY_A))
-        player->translateX -= deltaTime * translateSpeed;
+        player->translateX -= deltaTime * playerSpeed;
     else if (window->KeyHold(GLFW_KEY_D))
-        player->translateX += deltaTime * translateSpeed;
+        player->translateX += deltaTime * playerSpeed;
 }
 
 

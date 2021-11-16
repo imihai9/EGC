@@ -1,4 +1,7 @@
-// Source: https://learnopengl.com/In-Practice/2D-Game/Collisions/Collision-detection
+/* Sources:
+https://learnopengl.com/In-Practice/2D-Game/Collisions/Collision-detection
+https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection
+*/
 #include "collision.h"
 
 int sgn (float val) {
@@ -76,4 +79,16 @@ glm::vec2 CheckCollisionRectCircleInside(RectCB* rectCB, CircleCB* circleCB) {
         return glm::vec2(penetration_x, penetration_y);
     else
         return glm::vec2(0); // no collision occurred
+}
+
+bool CheckCollisionCircleCircle(CircleCB* circleCB1, CircleCB* circleCB2) {
+    float dx = (circleCB1->center.x) - (circleCB2->center.x);
+    float dy = (circleCB1->center.y) - (circleCB2->center.y);
+
+    float distance = glm::sqrt(dx * dx + dy * dy);
+
+    if (distance < circleCB1->radius + circleCB2->radius)
+        return true;
+    else
+        return false;
 }

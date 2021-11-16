@@ -56,10 +56,13 @@ namespace m1
         int deltaY;
         float resize_factor;
         int overview_toggle; // Toggles between showing whole map / a part of it;  For debug purposes
-        float translateSpeed = 300.f;
-        const float projSpeedMultiplier = 200.f;
-        const float enemySpeedMultiplier = 200.f;
+        const float playerSpeed = 150.f;
+        const float projSpeedMultiplier = 250.f;
         bool projectileLaunched;
+
+        float lastEnemyWaveTime;
+        float playerHealth = 100.f;
+        float enemyCollisionDmg = 2.f;
 
         Player* player;
         Map* map;
@@ -68,8 +71,10 @@ namespace m1
 
         std::vector<Obstacle*> obstacles;
         std::vector<Projectile::ProjectileData> projData;
-        Enemy::EnemyData enemyData;
+        std::vector<Enemy::EnemyData> enemyData;
 
+        void HandleCollisions();
+       
     };
 
 }   // namespace m1

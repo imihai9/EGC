@@ -10,7 +10,7 @@ Map::Map(LogicSpace logicSpace) {
     this->logicSpace = logicSpace;
     modelMatrix = glm::mat3(1);
 
-    float tx = logicSpace.width * 0.1f; // TODO: get rid of reduntant code
+    float tx = logicSpace.width * 0.1f;
     float ty = logicSpace.width * 0.1f;
 
     collisionBox = {

@@ -16,12 +16,13 @@ public:
 
 	float smallSquareSize;
 	float largeSquareSize;
+	float initial_tx, initial_ty;
 
 	struct EnemyData {
 		glm::vec2 initialPos;
 		glm::vec2 currentPos;
 		float rotationAngle;
-		float moveFactor;
+		float speedMultiplier;
 		CircleCB collisionBox;
 	};
 private:

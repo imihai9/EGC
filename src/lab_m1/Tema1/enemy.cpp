@@ -12,10 +12,11 @@ Enemy::Enemy(LogicSpace logicSpace) {
     this->largeSquareSize = 40;
 
     // Initial translation (in order to have enemy center in origin)
-    float x = -30, y = -25;
-    leftCorners = { glm::vec3(x, y, 0),
-                  glm::vec3(x + 40, y, 0),
-                  glm::vec3(x + 10, y + 10, 0) };
+    initial_tx = -30,
+    initial_ty = -25;
+    leftCorners = { glm::vec3(initial_tx, initial_ty, 0),
+                  glm::vec3(initial_tx + 40, initial_ty, 0),
+                  glm::vec3(initial_tx + 10, initial_ty + 10, 0) };
 
     modelMatrix = glm::mat3(1);
 }
@@ -31,8 +32,6 @@ void Enemy::Create() {
 
     collisionBox = {
         // OBSOLETE - TO DELETE!! TODO
-       // (float)(this->size * sqrt(2)),
-       // glm::vec2(leftCorner.x + size / 2, leftCorner.y + size / 2)
     };
 }
 
