@@ -1,6 +1,6 @@
 // Taken from EGC - Lab 2
 
-#include "object2D.h"
+#include "lab_m1/Tema1/object2D.h"
 
 #include <vector>
 

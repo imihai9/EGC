@@ -1,13 +1,13 @@
-#include "projectile.h"
+#include "lab_m1/Tema1/projectile.h"
 #include "core/engine.h"
 #include "utils/gl_utils.h"
-#include "object2D.h"
+#include "lab_m1/Tema1/object2D.h"
 #include <core/gpu/mesh.h>
 
 using namespace std;
 
 // A single object will be instantiated (should be a Singleton)
-// Data for different renders -> in EnemyData struct
+// Data for different renders -> in ProjData struct
 Projectile::Projectile(LogicSpace logicSpace) {
     this->logicSpace = logicSpace;
     this->size = 15.f;
@@ -25,9 +25,4 @@ void Projectile::Create() {
 
 vector<Mesh*> const& Projectile::getMeshes() {
     return meshes;
-}
-
-// Not applicable
-struct CircleCB* Projectile::getCollisionBox() {
-    return NULL;
 }

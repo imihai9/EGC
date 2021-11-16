@@ -16,7 +16,7 @@ Tema1::~Tema1()
 }
 
 float random(float min, float max) {
-    float random = ((float)rand()) / (float)RAND_MAX;
+    float random = ((float) rand()) / (float) RAND_MAX;
     float range = max - min;
     return (random * range) + min;
 }
@@ -127,7 +127,14 @@ void Tema1::Init()
 
     lastEnemyWaveTime = -1.f;
     lastProjectileLaunchTime = -1.f;
-
+    playerSpeed = 150.f;
+    projSpeedMultiplier = 250.f;
+    playerHealth = 100.f;
+    playerScore = 0.f;
+    enemyCollisionDmg = 20.f;
+    maxRangeSquared = 150.f * 150.f;
+    fireRate = 0.5f;
+    
     // Player instantiation
     player = new Player(logicSpace);
     InitEntity(player);
@@ -153,8 +160,22 @@ void Tema1::Init()
     InitEntity(projectile);
 
     // Healthbar instantiation
-    healthBar = new HealthBar(logicSpace);
-    InitEntity(healthBar);
+    bar = new Bar(logicSpace);
+    InitEntity(bar);
+
+    // Pickup instantiation
+    pickup = new Pickup(logicSpace);
+    InitEntity(pickup);
+}
+
+void Tema1::SpawnPickup(Enemy::EnemyData deadEnemy) {
+    int chance = rand() % 21;
+    if (chance == 1 || chance == 2) {
+        Pickup::PickupData newPickup;
+        newPickup.pos = deadEnemy.currentPos;
+        newPickup.collisionBox = { deadEnemy.currentPos.x - 30, deadEnemy.currentPos.y - 30, 60, 60 };
+        pickupData.push_back(newPickup);
+    }
 }
 
 void Tema1::HandleCollisions() {
@@ -207,6 +228,10 @@ void Tema1::HandleCollisions() {
             for (it_e = enemyData.begin(); it_e < enemyData.end(); ) { // for each enemy
                 collided = CheckCollisionCircleCircle(&(*it_p).collisionBox, &(*it_e).collisionBox);
                 if (collided) {
+                    playerScore++;
+                    if (playerScore == 200)
+                        playerScore = 0;
+                    SpawnPickup(*(it_e));
                     it_e = enemyData.erase(it_e);
                     it_p = projData.erase(it_p);
                     break;
@@ -235,6 +260,20 @@ void Tema1::HandleCollisions() {
             if (penetration != glm::vec2(0)) {
                 player->translateX += penetration.x;
                 player->translateY += penetration.y;
+            }
+        }
+    }
+
+    { // {Player - Pickup}
+        vector<Pickup::PickupData>::iterator it;
+        for (it = pickupData.begin(); it < pickupData.end(); ) {
+            glm::vec2 penetration = CheckCollisionRectCircle(&(*it).collisionBox, player->getCollisionBox());
+            if (penetration != glm::vec2(0)) {
+                playerHealth = min(100.f, playerHealth + 20.f);
+                it = pickupData.erase(it);
+            }
+            else {
+                it++;
             }
         }
     }
@@ -299,8 +338,20 @@ void Tema1::UpdateHealthbar() {
     glm::mat3 currHealthModelMatrix = maxHealthModelMatrix *
         transform2D::Scale((float)(playerHealth / 100), 1);
 
-    RenderMesh2D(healthBar->currHealth, shaders["VertexColor"], currHealthModelMatrix);
-    RenderMesh2D(healthBar->maxHealth, shaders["VertexColor"], maxHealthModelMatrix);
+    RenderMesh2D(bar->currHealth, shaders["VertexColor"], currHealthModelMatrix);
+    RenderMesh2D(bar->maxHealth, shaders["VertexColor"], maxHealthModelMatrix);
+}
+
+void Tema1::UpdateScorebar() {
+    glm::mat3 maxScoreModelMatrix = visMatrix *  // follow player (in order to stay fixed on screen
+        transform2D::Translate(logicSpace.width / 2 + 350, logicSpace.height / 2 + 150) *
+        transform2D::Translate(player->translateX, player->translateY);
+
+    glm::mat3 currScoreModelMatrix = maxScoreModelMatrix *
+        transform2D::Scale((float)(playerScore / 200), 1);
+
+    RenderMesh2D(bar->currHealth, shaders["VertexColor"], currScoreModelMatrix);
+    RenderMesh2D(bar->maxHealth, shaders["VertexColor"], maxScoreModelMatrix);
 }
 
 void Tema1::UpdateEnemies(float deltaTimeSeconds) {
@@ -331,10 +382,10 @@ void Tema1::UpdateEnemies(float deltaTimeSeconds) {
         enemyData[i].collisionBox.center = glm::vec2(enemyData[i].currentPos.x, enemyData[i].currentPos.y);
     }
 
-    // Spawn new enemy wave (5 randomly placed enemies) at start & every 5s
+    // --- Spawn new enemy wave (5 randomly placed enemies) at start & every 8s
     float elapsedTime = Engine::GetElapsedTime();
 
-    if (lastEnemyWaveTime == -1.f || elapsedTime - lastEnemyWaveTime >= 5.f) {
+    if (lastEnemyWaveTime == -1.f || elapsedTime - lastEnemyWaveTime >= 8.f) {
         lastEnemyWaveTime = elapsedTime;
         Enemy::EnemyData newEnemyData;
 
@@ -356,25 +407,78 @@ void Tema1::UpdateEnemies(float deltaTimeSeconds) {
 
             newEnemyData.initialPos = glm::vec2(initial_x, initial_y); // spawn point
             newEnemyData.currentPos = newEnemyData.initialPos;
-            newEnemyData.speedMultiplier = random(50.f, 150.f);
+
+            int speedyEnemyChance = rand() % 20;
+            if (speedyEnemyChance == 1)
+                newEnemyData.speedMultiplier = 350.f;
+            else
+                newEnemyData.speedMultiplier = random(50.f, 140.f);
 
             newEnemyData.collisionBox.radius = (float)(25 * glm::sqrt(2));
             enemyData.push_back(newEnemyData);
         }
     }
 }
+
+
+void Tema1::UpdateProjectiles(float deltaTimeSeconds) {
+    vector<Projectile::ProjectileData>::iterator it;
+
+    for (it = projData.begin(); it < projData.end(); ) {
+        glm::mat3 projectile_modelMatrix = glm::mat3(1);
+        (*it).moveFactor += projSpeedMultiplier * deltaTimeSeconds;
+
+        float tx = cos(glm::pi<float>() * 1.5f + (*it).rotationAngle) * (*it).moveFactor;
+        float ty = sin(glm::pi<float>() * 1.5f + (*it).rotationAngle) * (*it).moveFactor;
+
+        glm::vec2 projectile_currPos = (*it).initialPos + glm::vec2(tx, ty);
+
+        float dx = projectile_currPos.x - (*it).initialPos.x;
+        float dy = projectile_currPos.y - (*it).initialPos.y;
+
+        // Destroy projectile if max range reached
+        if (dx * dx + dy * dy > maxRangeSquared) {
+            it = projData.erase(it);
+        }
+
+        else {
+            projectile_modelMatrix = visMatrix *
+                transform2D::Translate(projectile_currPos.x, projectile_currPos.y) *
+                transform2D::Rotate((*it).rotationAngle);
+
+            RenderMesh2D(projectile->getMeshes()[0], shaders["VertexColor"], projectile_modelMatrix);
+            (*it).collisionBox.center = glm::vec2(projectile_currPos.x, projectile_currPos.y);
+            it++;
+        }
+    }
+}
+
+void Tema1::UpdateObstacles() {
+    for (Obstacle* obst : obstacles) {
+        obst->modelMatrix = visMatrix;
+        RenderEntity(obst);
+    }
+}
+
+void Tema1::UpdatePickups() {
+    for (Pickup::PickupData pickupDataObj : pickupData) {
+        glm::mat3 modelMatrix = visMatrix *
+            transform2D::Translate(pickupDataObj.pos.x, pickupDataObj.pos.y);
+
+       RenderMesh2D(pickup->getMeshes()[0], shaders["VertexColor"], modelMatrix);
+    }
+}
+
 void Tema1::UpdateMap() {
-
-}
-void Tema1::UpdateProjectiles() {
-
+    map->modelMatrix = visMatrix;
+    RenderEntity(map);
 }
 
 
-
-void Tema1::GameOver() { // Only show enlarged health bar
- 
+void Tema1::GameOver() { 
+    // Should probably draw something here
 }
+
 void Tema1::Update(float deltaTimeSeconds)
 {
       glm::ivec2 resolution = window->GetResolution();
@@ -393,49 +497,12 @@ void Tema1::Update(float deltaTimeSeconds)
 
           UpdatePlayer();
           UpdateHealthbar();
+          UpdateScorebar();
           UpdateEnemies(deltaTimeSeconds);
-
-          // Projectile
-          vector<Projectile::ProjectileData>::iterator it;
-
-          for (it = projData.begin(); it < projData.end(); ) {
-              glm::mat3 projectile_modelMatrix = glm::mat3(1);
-              (*it).moveFactor += projSpeedMultiplier * deltaTimeSeconds;
-
-              float tx = cos(glm::pi<float>() * 1.5f + (*it).rotationAngle) * (*it).moveFactor;
-              float ty = sin(glm::pi<float>() * 1.5f + (*it).rotationAngle) * (*it).moveFactor;
-
-              glm::vec2 projectile_currPos = (*it).initialPos + glm::vec2(tx, ty);
-            
-              float dx = projectile_currPos.x - (*it).initialPos.x;
-              float dy = projectile_currPos.y - (*it).initialPos.y;
-
-              // Destroy projectile if max range reached
-              if (dx * dx + dy * dy > maxRangeSquared) {
-                  it = projData.erase(it);
-              }
-
-              else {
-                  projectile_modelMatrix = visMatrix *
-                      transform2D::Translate(projectile_currPos.x, projectile_currPos.y) *
-                      transform2D::Rotate((*it).rotationAngle);
-
-                  RenderMesh2D(projectile->getMeshes()[0], shaders["VertexColor"], projectile_modelMatrix);
-                  (*it).collisionBox.center = glm::vec2(projectile_currPos.x, projectile_currPos.y);
-                  it++;
-              }
-          }
-
-          // Obstacles
-          for (Obstacle* obst : obstacles) {
-              obst->modelMatrix = visMatrix;
-              RenderEntity(obst);
-          }
-
-          // Map
-          map->modelMatrix = visMatrix;
-          RenderEntity(map);
-
+          UpdateProjectiles(deltaTimeSeconds);
+          UpdateObstacles();
+          UpdatePickups();
+          UpdateMap();
       }
 }
 

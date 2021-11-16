@@ -1,13 +1,14 @@
 #pragma once
 
 #include "components/simple_scene.h"
-#include "space.h"
-#include "map.h"
-#include "player.h"
-#include "obstacle.h"
-#include "projectile.h"
-#include "enemy.h"
-#include "healthBar.h"
+#include "lab_m1/Tema1/space.h"
+#include "lab_m1/Tema1/map.h"
+#include "lab_m1/Tema1/player.h"
+#include "lab_m1/Tema1/obstacle.h"
+#include "lab_m1/Tema1/projectile.h"
+#include "lab_m1/Tema1/enemy.h"
+#include "lab_m1/Tema1/bar.h"
+#include "lab_m1/Tema1/pickup.h"
 #include <vector>
 
 namespace m1
@@ -50,16 +51,30 @@ namespace m1
     protected:
         void UpdatePlayer();
         void UpdateHealthbar();
+        void UpdateScorebar();
         void UpdateMap();
-        void UpdateProjectiles();
         void UpdateEnemies(float deltaTimeSeconds);
-        
+        void UpdateProjectiles(float deltaTimeSeconds);
+        void UpdateObstacles();
+        void UpdatePickups();
+        void SpawnPickup(Enemy::EnemyData deadEnemy);
 
         void HandleCollisions();
         void GameOver();
 
+        Player* player;
+        Map* map;
+        Projectile* projectile;
+        Enemy* enemy;
+        Bar* bar;
+        Pickup* pickup;
+
+        std::vector<Obstacle*> obstacles;
+        std::vector<Projectile::ProjectileData> projData;
+        std::vector<Enemy::EnemyData> enemyData;
+        std::vector<Pickup::PickupData> pickupData;
+
         float cx, cy;
-        glm::mat3 modelMatrix;
         float scaleX, scaleY;
         float rotationAngle;
         int mouseX, mouseY;
@@ -67,26 +82,18 @@ namespace m1
         int deltaY;
         float resize_factor;
         int overview_toggle; // Toggles between showing whole map / a part of it;  For debug purposes
-        const float playerSpeed = 150.f;
-        const float projSpeedMultiplier = 250.f;
+        float playerSpeed;
+        float projSpeedMultiplier;
         bool projectileLaunched;
 
         float lastEnemyWaveTime;
         float lastProjectileLaunchTime;
-        float playerHealth = 100.f;
-        const float enemyCollisionDmg = 20.f;
-        const float maxRangeSquared = 150.f * 150.f;
-        const float fireRate = 0.5f;
 
-        Player* player;
-        Map* map;
-        Projectile* projectile;
-        Enemy* enemy;
-        HealthBar* healthBar;
-
-        std::vector<Obstacle*> obstacles;
-        std::vector<Projectile::ProjectileData> projData;
-        std::vector<Enemy::EnemyData> enemyData;
+        float playerHealth;
+        float playerScore;
+        float enemyCollisionDmg;
+        float maxRangeSquared;
+        float fireRate;
     };
 
 }   // namespace m1

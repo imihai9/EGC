@@ -2,7 +2,7 @@
 https://learnopengl.com/In-Practice/2D-Game/Collisions/Collision-detection
 https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection
 */
-#include "collision.h"
+#include "lab_m1/Tema1/collision.h"
 
 int sgn (float val) {
     return (0.f < val) - (val < 0.f);

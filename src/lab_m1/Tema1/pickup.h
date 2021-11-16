@@ -4,11 +4,13 @@
 #include "lab_m1/Tema1/entity.h"
 #include "lab_m1/Tema1/space.h"
 #include "lab_m1/Tema1/collision.h"
+#include "lab_m1/Tema1/enemy.h"
 
-class Enemy : public Entity
+// Health pickup
+class Pickup : public Entity
 {
 public:
-	Enemy(LogicSpace logicSpace);
+	Pickup(LogicSpace logicSpace);
 	void Create();
 
 	std::vector<Mesh*> const& getMeshes();
@@ -18,16 +20,12 @@ public:
 	float initial_tx, initial_ty;
 
 	// Data for different renders
-	struct EnemyData {
-		glm::vec2 initialPos;
-		glm::vec2 currentPos;
-		float rotationAngle;
-		float speedMultiplier;
-		CircleCB collisionBox;
+	struct PickupData {
+		glm::vec2 pos;
+		RectCB collisionBox;
+		bool type;	// 0 = health, 1 = firerate
 	};
 private:
 	std::vector<Mesh*> meshes;
 	LogicSpace logicSpace;
-
-	std::vector<glm::vec3> leftCorners;
 };

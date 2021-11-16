@@ -1,7 +1,7 @@
-#include "map.h"
+#include "lab_m1/Tema1/map.h"
 #include "core/engine.h"
 #include "utils/gl_utils.h"
-#include "object2D.h"
+#include "lab_m1/Tema1/object2D.h"
 #include <core/gpu/mesh.h>
 
 using namespace std;

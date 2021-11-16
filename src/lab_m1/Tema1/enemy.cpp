@@ -1,7 +1,7 @@
-#include "enemy.h"
+#include "lab_m1/Tema1/enemy.h"
 #include "core/engine.h"
 #include "utils/gl_utils.h"
-#include "object2D.h"
+#include "lab_m1/Tema1/object2D.h"
 #include <core/gpu/mesh.h>
 
 using namespace std;
@@ -35,9 +35,4 @@ void Enemy::Create() {
 
 vector<Mesh*> const& Enemy::getMeshes() {
     return meshes;
-}
-
-// Not applicable
-struct CircleCB* Enemy::getCollisionBox() {
-    return NULL;
 }

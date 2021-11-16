@@ -1,9 +1,9 @@
 #pragma once
 
 #include "components/simple_scene.h"
-#include "entity.h"
-#include "space.h"
-#include "collision.h"
+#include "lab_m1/Tema1/entity.h"
+#include "lab_m1/Tema1/space.h"
+#include "lab_m1/Tema1/collision.h"
 
 class Projectile : public Entity
 {
@@ -12,7 +12,6 @@ public:
 	void Create();
 
 	std::vector<Mesh*> const& getMeshes();
-	struct CircleCB* getCollisionBox(); // updates and returns the collision box
 
 	float size;
 
