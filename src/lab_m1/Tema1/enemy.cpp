@@ -6,6 +6,8 @@
 
 using namespace std;
 
+// A single object will be instantiated (should be a Singleton)
+// Data for different renders -> in EnemyData struct
 Enemy::Enemy(LogicSpace logicSpace) {
     this->logicSpace = logicSpace;
     this->smallSquareSize = 20;
@@ -29,18 +31,13 @@ void Enemy::Create() {
     meshes.push_back(square);
     square = object::CreateSquare("enemy_rect1", leftCorners[1], smallSquareSize, glm::vec3(0.48f, 0.18f, 0.18f), true);
     meshes.push_back(square);
-
-    collisionBox = {
-        // OBSOLETE - TO DELETE!! TODO
-    };
 }
-
 
 vector<Mesh*> const& Enemy::getMeshes() {
     return meshes;
 }
 
-// updates and returns the collision box
+// Not applicable
 struct CircleCB* Enemy::getCollisionBox() {
-    return &collisionBox;
+    return NULL;
 }

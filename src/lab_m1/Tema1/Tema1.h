@@ -7,6 +7,7 @@
 #include "obstacle.h"
 #include "projectile.h"
 #include "enemy.h"
+#include "healthBar.h"
 #include <vector>
 
 namespace m1
@@ -47,6 +48,16 @@ namespace m1
         LogicSpace logicSpace;
 
     protected:
+        void UpdatePlayer();
+        void UpdateHealthbar();
+        void UpdateMap();
+        void UpdateProjectiles();
+        void UpdateEnemies(float deltaTimeSeconds);
+        
+
+        void HandleCollisions();
+        void GameOver();
+
         float cx, cy;
         glm::mat3 modelMatrix;
         float scaleX, scaleY;
@@ -61,20 +72,21 @@ namespace m1
         bool projectileLaunched;
 
         float lastEnemyWaveTime;
+        float lastProjectileLaunchTime;
         float playerHealth = 100.f;
-        float enemyCollisionDmg = 2.f;
+        const float enemyCollisionDmg = 20.f;
+        const float maxRangeSquared = 150.f * 150.f;
+        const float fireRate = 0.5f;
 
         Player* player;
         Map* map;
         Projectile* projectile;
         Enemy* enemy;
+        HealthBar* healthBar;
 
         std::vector<Obstacle*> obstacles;
         std::vector<Projectile::ProjectileData> projData;
         std::vector<Enemy::EnemyData> enemyData;
-
-        void HandleCollisions();
-       
     };
 
 }   // namespace m1

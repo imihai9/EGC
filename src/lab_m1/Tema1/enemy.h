@@ -18,6 +18,7 @@ public:
 	float largeSquareSize;
 	float initial_tx, initial_ty;
 
+	// Data for different renders
 	struct EnemyData {
 		glm::vec2 initialPos;
 		glm::vec2 currentPos;
@@ -30,5 +31,4 @@ private:
 	LogicSpace logicSpace;
 
 	std::vector<glm::vec3> leftCorners;
-	CircleCB collisionBox;
 };

@@ -16,6 +16,7 @@ public:
 
 	float size;
 
+	// Data for different renders
 	struct ProjectileData {
 		glm::vec2 initialPos;
 		float rotationAngle;
@@ -27,6 +28,4 @@ private:
 	LogicSpace logicSpace;
 
 	glm::vec3 color;
-
-	CircleCB collisionBox;
 };
