@@ -6,6 +6,7 @@
 #include "player.h"
 #include "obstacle.h"
 #include "projectile.h"
+#include "enemy.h"
 #include <vector>
 
 namespace m1
@@ -55,15 +56,19 @@ namespace m1
         int deltaY;
         float resize_factor;
         int overview_toggle; // Toggles between showing whole map / a part of it;  For debug purposes
-        float translateSpeed = 100.f;
+        float translateSpeed = 300.f;
         const float projSpeedMultiplier = 200.f;
+        const float enemySpeedMultiplier = 200.f;
         bool projectileLaunched;
 
         Player* player;
         Map* map;
-        std::vector<Obstacle*> obstacles;
         Projectile* projectile;
+        Enemy* enemy;
+
+        std::vector<Obstacle*> obstacles;
         std::vector<Projectile::ProjectileData> projData;
+        Enemy::EnemyData enemyData;
 
     };
 

@@ -129,6 +129,13 @@ void Tema1::Init()
     player = new Player(logicSpace);
     InitEntity(player);
 
+    // Enemy object instantiation
+    enemy = new Enemy(logicSpace);
+    InitEntity(enemy);
+    enemyData.initialPos = glm::vec2(400, 400); // spawn point
+    enemyData.currentPos = glm::vec2(400, 400);
+    enemyData.moveFactor = 0;
+
     // Map instantiation
     map = new Map(logicSpace);
     InitEntity(map);
@@ -141,7 +148,7 @@ void Tema1::Init()
     GenerateObstacle(glm::vec3(logicSpace.x + 500, logicSpace.y + 500, 0), glm::vec2(100, 100), color);
     GenerateObstacle(glm::vec3(logicSpace.x + 800, logicSpace.y + 250, 0), glm::vec2(50, 300), color);
 
-    // Projectile instantiation
+    // Projectile object instantiation
     projectile = new Projectile(logicSpace);
     InitEntity(projectile);
 }
@@ -211,6 +218,8 @@ void Tema1::FrameStart()
     GetCameraInput()->SetActive(false);
 }
 
+float enemyMoveFactor = 0;
+
 void Tema1::Update(float deltaTimeSeconds)
 {
       glm::ivec2 resolution = window->GetResolution();
@@ -240,6 +249,36 @@ void Tema1::Update(float deltaTimeSeconds)
           transform2D::Translate(-logicSpace.width / 2, -logicSpace.height / 2);
 
       RenderEntity(player);
+
+      // Enemy
+      glm::mat3 enemyModelMatrix = glm::mat3(1);
+
+      enemyData.moveFactor += enemySpeedMultiplier * deltaTimeSeconds;
+
+      // -- player position - enemy position
+      
+      // -- rotation
+      float dx_rot =  (logicSpace.width / 2 + player->translateX) - enemyData.currentPos.x;
+      float dy_rot =  (logicSpace.height / 2 + player->translateY) - enemyData.currentPos.y;
+      enemyData.rotationAngle = atan2(dx_rot, -dy_rot);
+
+      // -- translation
+      float tx = cos(glm::pi<float>() * 1.5f + enemyData.rotationAngle);
+      float ty = sin(glm::pi<float>() * 1.5f + enemyData.rotationAngle);
+
+      enemyData.currentPos.x += tx * enemySpeedMultiplier * deltaTimeSeconds;
+      enemyData.currentPos.y += ty * enemySpeedMultiplier * deltaTimeSeconds;
+
+      enemyModelMatrix = visMatrix *
+          transform2D::Translate(enemyData.currentPos.x, enemyData.currentPos.y) *
+          transform2D::Rotate(enemyData.rotationAngle);
+
+     // RenderEntity(enemy, enemyModelMatrix);
+      vector<Mesh*> enemyMeshes = enemy->getMeshes();
+      for (int i = 0; i < enemyMeshes.size(); i++) {
+          RenderMesh2D(enemyMeshes[i], shaders["VertexColor"], enemyModelMatrix);
+      }
+
 
       // Projectile
       for (int i = 0; i < projData.size(); i++) {
