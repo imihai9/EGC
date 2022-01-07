@@ -47,6 +47,7 @@ namespace m1
         float ortho_x;
         float ortho_y;
 
+        float cameraRotateAngle = 0;
         tema2::Player* player;
     };
 }   // namespace m1

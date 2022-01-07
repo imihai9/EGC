@@ -20,7 +20,7 @@ void Tema2::Init()
     firstPersonCamera = false;
 
     camera = new tema2::Camera();
-    camera->Set(glm::vec3(0, 2, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
+    //camera->Set(glm::vec3(0, 2, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
 
     FOV_angle = 60.f;
     ortho_x = 30.f;
@@ -55,12 +55,6 @@ void Tema2::Init()
 
     player = new Player();
 }
-
-/* TODO: delete
-void Tema2::InitEntity(Entity* entity) {
-    entity->Create();
-}
-*/
 
 Mesh* Tema2::CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices)
 {
@@ -119,7 +113,6 @@ Mesh* Tema2::CreateMesh(const char* name, const std::vector<VertexFormat>& verti
 }
 
 void Tema2::CreateCube(const char *name, glm::vec3 color) {
-    // Create a simple cube
     {
         vector<VertexFormat> vertices
         {
@@ -195,28 +188,13 @@ void Tema2::FrameStart()
 
 void Tema2::Update(float deltaTimeSeconds)
 {
+    glm::vec3 targetPos = camera->GetTargetPosition();
+
+    //modelMatrix = glm::rotate(modelMatrix, RADIANS(45.0f), glm::vec3(0, 1, 0));
+    player->modelMatrix = glm::translate(glm::mat4(1), glm::vec3(targetPos.x, 0.f, targetPos.z));
+    player->modelMatrix = glm::rotate(player->modelMatrix, cameraRotateAngle, glm::vec3(0, 1, 0));
+
     RenderEntity(player);
-
-
-
-    /*
-    {
-        glm::mat4 modelMatrix = glm::mat4(1);
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(0, 1, 0));
-        modelMatrix = glm::rotate(modelMatrix, RADIANS(45.0f), glm::vec3(0, 1, 0));
-
-        RenderMesh(meshes["box"], shaders["VertexNormal"], modelMatrix);
-    }
-    */
-
-    // Render the camera target.
-    if (renderCameraTarget)
-    {
-        glm::mat4 modelMatrix = glm::mat4(1);
-        modelMatrix = glm::translate(modelMatrix, camera->GetTargetPosition());
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(0.1f));
-        RenderSimpleMesh(meshes["sphere"], shaders["NewShader"], modelMatrix);
-    }
 }
 
 
@@ -299,7 +277,11 @@ void Tema2::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
         // Rotate the camera in third-person mode around
         // OX and OY.
         camera->RotateThirdPerson_OX(-deltaY * sensivityOY);
+
+        cameraRotateAngle += -deltaX * sensivityOX;
         camera->RotateThirdPerson_OY(-deltaX * sensivityOX);
+
+
     }
 }
 
