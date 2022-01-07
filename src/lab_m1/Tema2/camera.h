@@ -4,7 +4,7 @@
 #include "utils/glm_utils.h"
 #include "utils/math_utils.h"
 
-namespace camera
+namespace tema2
 {
     class Camera
     {

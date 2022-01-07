@@ -2,6 +2,9 @@
 
 #include "components/simple_scene.h"
 #include "lab_m1/Tema2/camera.h"
+#include "lab_m1/Tema2/player.h"
+
+using namespace tema2;
 
 namespace m1
 {
@@ -18,8 +21,6 @@ namespace m1
         void Update(float deltaTimeSeconds) override;
         void FrameEnd() override;
 
-        void RenderMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix) override;
-
         void OnInputUpdate(float deltaTime, int mods) override;
         void OnKeyPress(int key, int mods) override;
         void OnKeyRelease(int key, int mods) override;
@@ -29,8 +30,14 @@ namespace m1
         void OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) override;
         void OnWindowResize(int width, int height) override;
 
+        //void InitEntity(tema2::Entity* entity);
+        void RenderEntity(tema2::Entity* entity);
+        void RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix);
+        Mesh* CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices);
+        void CreateCube(const char *name, glm::vec3 color);
+
     protected:
-        camera::Camera* camera;
+        Camera* camera;
         glm::mat4 projectionMatrix;
         bool renderCameraTarget;
 
@@ -39,5 +46,7 @@ namespace m1
         float FOV_angle;
         float ortho_x;
         float ortho_y;
+
+        tema2::Player* player;
     };
 }   // namespace m1
