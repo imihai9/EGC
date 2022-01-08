@@ -5,20 +5,19 @@
 #include "lab_m1/Tema2/collision.h"
 
 namespace tema2 {
-	class Player : public Entity
+	class Wall : public Entity
 	{
 	public:
-		Player();
+		Wall(glm::vec3 pos);
 		void Create();
-
-		float translateX;
-		float translateY;
 
 		std::vector<glm::mat4> const& getModelMatrices();
 		std::vector<Entity::Primitive> const& getPrimitives();
+
 		AABB* getCollisionBox();
 
 	private:
+		glm::vec3 pos;
 		std::vector<Entity::Primitive> primitives;
 		AABB collisionBox;
 	};

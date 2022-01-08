@@ -13,10 +13,25 @@ Tema2::Tema2()
 Tema2::~Tema2()
 {}
 
+void Tema2::InitMaze() {
+    vector<vector<int>> mazeMat = maze->getMatrix();
+
+    for (int i = 0; i < mazeMat.size(); i++) {
+        for (int j = 0; j < mazeMat[0].size(); j++) {
+            if (mazeMat[i][j] == 1) {
+                // Wall
+                Wall* wall = new Wall(glm::vec3(2 * i, 1, 2 * j));
+                walls.push_back(wall);
+            }
+            // 0, 2..
+        }
+    }
+}
+
 void Tema2::Init()
 {
     window->DisablePointer(); //TODO: do this also on camera change
-    renderCameraTarget = true;
+    renderPlayer = true;
     firstPersonCamera = false;
 
     camera = new tema2::Camera();
@@ -26,18 +41,6 @@ void Tema2::Init()
     ortho_x = 30.f;
     ortho_y = 20.f;
 
-    {
-        Mesh* mesh = new Mesh("box");
-        mesh->LoadMesh(PATH_JOIN(window->props.selfDir, RESOURCE_PATH::MODELS, "primitives"), "box.obj");
-        meshes[mesh->GetMeshID()] = mesh;
-    }
-
-    {
-        Mesh* mesh = new Mesh("sphere");
-        mesh->LoadMesh(PATH_JOIN(window->props.selfDir, RESOURCE_PATH::MODELS, "primitives"), "sphere.obj");
-        meshes[mesh->GetMeshID()] = mesh;
-    }
-    
     projectionMatrix = glm::perspective(RADIANS(FOV_angle), window->props.aspectRatio, 0.01f, 200.0f);
 
     // Create a shader program
@@ -54,8 +57,11 @@ void Tema2::Init()
     CreateCube("blue_cube", glm::vec3(0.22f, 0.25f, 0.58f));
 
     player = new Player();
+    maze = new Maze();
+    InitMaze();
 }
 
+// Lab 6
 Mesh* Tema2::CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices)
 {
     unsigned int VAO = 0;
@@ -185,16 +191,60 @@ void Tema2::FrameStart()
     glViewport(0, 0, resolution.x, resolution.y);
 }
 
+bool Tema2::HandleCollisions() {
+    // {Player - Walls}
+    vector<Wall*>::iterator it;
+    for (it = walls.begin(); it < walls.end(); it++) {
+        bool collided = CheckCollisionAABB((*it)->getCollisionBox(), player->getCollisionBox());
+        if (collided)
+            return true;
+        /*
+        if (collided) {
+           cout << "c";
+        }*/
+    }
+
+    return false;
+}
+
+void Tema2::UpdatePlayer() {
+    glm::vec3 targetPos = glm::vec3(1);
+    
+    if (firstPersonCamera)
+        targetPos = camera->GetTargetPositionFPS();
+    else
+        targetPos = camera->GetTargetPosition();
+
+    glm::mat4 oldModelMatrix = player->modelMatrix;
+
+    player->modelMatrix = glm::translate(glm::mat4(1), glm::vec3(targetPos.x, 0.f, targetPos.z));
+    player->modelMatrix = glm::rotate(player->modelMatrix, playerRotateAngle, glm::vec3(0, 1, 0));
+
+    if (HandleCollisions() == true)
+        player->modelMatrix = oldModelMatrix;
+
+    if (renderPlayer)
+        RenderEntity(player);
+
+    // Collision box render test
+    glm::mat4 cbox_modelMatrix = glm::mat4(1);
+    cbox_modelMatrix = glm::translate(cbox_modelMatrix, glm::vec3(0, 0.725f, 0));
+    cbox_modelMatrix = glm::scale(cbox_modelMatrix, glm::vec3(0.8f / 2.f, 1.45f / 2.f, 0.2f / 2.f));
+    RenderSimpleMesh(meshes["yellow_cube"], shaders["NewShader"], player->modelMatrix * cbox_modelMatrix);
+
+}
+
+void Tema2::UpdateWalls() {
+    vector<Wall*>::iterator it;
+    for (it = walls.begin(); it < walls.end(); it++) {
+        RenderEntity(*it);
+    }
+}
 
 void Tema2::Update(float deltaTimeSeconds)
 {
-    glm::vec3 targetPos = camera->GetTargetPosition();
-
-    //modelMatrix = glm::rotate(modelMatrix, RADIANS(45.0f), glm::vec3(0, 1, 0));
-    player->modelMatrix = glm::translate(glm::mat4(1), glm::vec3(targetPos.x, 0.f, targetPos.z));
-    player->modelMatrix = glm::rotate(player->modelMatrix, cameraRotateAngle, glm::vec3(0, 1, 0));
-
-    RenderEntity(player);
+    UpdatePlayer();
+    UpdateWalls();
 }
 
 
@@ -235,8 +285,16 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 
 void Tema2::OnKeyPress(int key, int mods)
 {
+    if (key == GLFW_KEY_C) {
+        HandleCollisions();
+    }
+
+    if (key == GLFW_KEY_X) {
+        window->DisablePointer();
+    }
+
     if (key == GLFW_KEY_T) {
-        renderCameraTarget = !renderCameraTarget;
+        renderPlayer = !renderPlayer;
     }
     // Switch projections
     if (key == GLFW_KEY_O) {
@@ -246,9 +304,20 @@ void Tema2::OnKeyPress(int key, int mods)
         projectionMatrix = glm::perspective(RADIANS(FOV_angle), window->props.aspectRatio, 0.01f, 200.0f);
     }
 
-    if (key == GLFW_KEY_LEFT_CONTROL || key == GLFW_KEY_RIGHT_CONTROL) {
+    if (key == GLFW_KEY_LEFT_CONTROL || key == GLFW_KEY_RIGHT_CONTROL ||
+        key == GLFW_MOUSE_BUTTON_RIGHT) {
+
+        window->DisablePointer();
+
         firstPersonCamera = !firstPersonCamera;
-        // camera move forward
+        if (firstPersonCamera) {
+            camera->TranslateForward(camera->distanceToTarget);
+            renderPlayer = false;
+        }
+        else {
+            camera->TranslateForward(-camera->distanceToTarget);
+            renderPlayer = true;
+        }
     }
 }
 
@@ -259,29 +328,23 @@ void Tema2::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 {
     float sensivityOX = 0.001f;
     float sensivityOY = 0.001f;
-       
+
+    playerRotateAngle += -deltaX * sensivityOX;
+
     if (firstPersonCamera) {
         // Rotate the camera in first-person mode around
         // OX and OY.
 
-        //TODO: camera move forward, dont disable target(player)
-        window->DisablePointer();
-        renderCameraTarget = false;
         camera->RotateFirstPerson_OX(-deltaY * sensivityOY); // looks up-down
         camera->RotateFirstPerson_OY(-deltaX * sensivityOX); // looks left-right
     }
 
     else {
-        renderCameraTarget = true;
-        window->DisablePointer();
+
         // Rotate the camera in third-person mode around
         // OX and OY.
         camera->RotateThirdPerson_OX(-deltaY * sensivityOY);
-
-        cameraRotateAngle += -deltaX * sensivityOX;
         camera->RotateThirdPerson_OY(-deltaX * sensivityOX);
-
-
     }
 }
 
