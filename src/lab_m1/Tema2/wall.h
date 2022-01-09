@@ -11,7 +11,6 @@ namespace tema2 {
 		Wall(glm::vec3 pos);
 		AABB* getCollisionBox();
 
-		std::vector<glm::mat4> const& getModelMatrices();
 		std::vector<Entity::Primitive> const& getPrimitives();
 
 	private:

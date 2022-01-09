@@ -38,9 +38,12 @@ namespace m1
         Mesh* CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices);
         void CreateCube(const char *name, glm::vec3 color);
         void InitMaze();
+        void UpdateCameraPos();
         void UpdatePlayer();
         void UpdateWalls();
         void UpdateEnemies(float deltaTimeSeconds);
+        void UpdateCrosshair();
+        void UpdateBar();
         bool HandleColl_PlayerWall();
         bool HandleColl_EnemyWalls(tema2::Enemy *enemy);
 

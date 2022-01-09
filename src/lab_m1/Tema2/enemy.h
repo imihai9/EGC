@@ -17,8 +17,10 @@ namespace tema2 {
 
 		std::vector<glm::vec3> directions;
 		glm::vec3 translation;
-
+		glm::vec3 size;
 		int currDir; // 0/1/2/3
+
+
 	private:
 		void Create();
 		void InitCollisionBox();

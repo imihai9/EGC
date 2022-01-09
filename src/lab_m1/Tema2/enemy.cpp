@@ -11,23 +11,22 @@ Enemy::Enemy(glm::vec3 pos) { // pos = cube center position
     modelMatrix = glm::mat4(1); // global model matrix
     this->pos = pos;
     this->translation = glm::vec3(0);
-
-    Create();
-    InitCollisionBox();
-
-    this->directions = { 
+    this->directions = {
         glm::vec3(+1, 0, 0), // OX +
-        glm::vec3(0, 0, +1),// OZ +
-        glm::vec3(-1, 0, 0),// OX -
-        glm::vec3(0, 0, -1)// OZ -
+        glm::vec3(0, 0, +1), // OZ +
+        glm::vec3(-1, 0, 0), // OX -
+        glm::vec3(0, 0, -1)  // OZ -
     };
 
+    this->size = glm::vec3(0.7f, 2, 0.7f);
     this->currDir = 0;
+    Create();
+    InitCollisionBox();
 }
 
 void Enemy::Create() {
     glm::mat4 matrix = glm::translate(glm::mat4(1), pos);
-    matrix = glm::scale(matrix, glm::vec3(0.7f / 2, 1, 0.7f / 2)); // divide by 5 on X,Z axis => 0.4f
+    matrix = glm::scale(matrix, size * 0.5f); // divide by 2 (original cube size)
     primitives.push_back({ "red_cube" , matrix });
 }
 
@@ -39,8 +38,8 @@ void Enemy::InitCollisionBox() {
     // A wall is a cube of size 
     // collisionBox.center = pos;
     // collisionBox.size = glm::vec3(0.4, 2, 0.4);
-    collisionBox.min = glm::vec3(pos.x - 0.35f, pos.y - 1, pos.z - 0.35f);
-    collisionBox.max = glm::vec3(pos.x + 0.35f, pos.y + 1, pos.z + 0.35f);
+    collisionBox.min = pos - size * 0.5f;
+    collisionBox.max = pos + size * 0.5f;
 }
 
 std::vector<Entity::Primitive> const& Enemy::getPrimitives() {

@@ -26,7 +26,10 @@ void Tema2::InitMaze() {
                 Enemy* enemy = new Enemy(glm::vec3(2 * i, 1, 2 * j));
                 enemies.push_back(enemy);
             }
-            // 0, 2..
+            else if (mazeMat[i][j] == 3) { // Initial player pos
+                player->deltaTranslation = glm::vec3(2 * i, 0, 2 * j);
+                UpdatePlayer();
+            }
         }
     }
 }
@@ -155,7 +158,7 @@ void Tema2::CreateCube(const char* name, glm::vec3 color) {
     }
 }
 
-void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, const glm::mat4 &projMatrix)
+void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, const glm::mat4& projMatrix)
 {
     if (!mesh || !shader || !shader->GetProgramID())
         return;
@@ -167,7 +170,7 @@ void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelM
     glUniformMatrix4fv(modelLocation, 1, GL_FALSE, &modelMatrix[0][0]);
 
     glm::mat4 viewMatrix;
-    
+
     if (projMatrix == projectionMatrixPersp)
         viewMatrix = camera->GetViewMatrix();
     else if (projMatrix == projectionMatrixOrtho)
@@ -192,7 +195,7 @@ void Tema2::RenderEntity(Entity* entity) {
     vector<Entity::Primitive> primitives = entity->getPrimitives();
 
     for (Entity::Primitive primitive : primitives) {
-        RenderSimpleMesh(meshes[primitive.name], shaders["NewShader"], 
+        RenderSimpleMesh(meshes[primitive.name], shaders["NewShader"],
             entity->modelMatrix * primitive.modelMatrix, projectionMatrixPersp);
     }
 }
@@ -208,7 +211,6 @@ void Tema2::FrameStart()
     glViewport(0, 0, resolution.x, resolution.y);
 }
 
-glm::vec3 tmpPlayerTranslate; // TODO: put in player
 
 bool Tema2::HandleColl_PlayerWall() {
     // {Player - Walls}
@@ -222,7 +224,7 @@ bool Tema2::HandleColl_PlayerWall() {
     return false;
 }
 
-bool Tema2::HandleColl_EnemyWalls(Enemy *enemy) {
+bool Tema2::HandleColl_EnemyWalls(Enemy* enemy) {
     // {Enemy - Walls}
     vector<Wall*>::iterator it;
     for (it = walls.begin(); it < walls.end(); it++) {
@@ -230,25 +232,28 @@ bool Tema2::HandleColl_EnemyWalls(Enemy *enemy) {
         if (collided)
             return true;
     }
-   // cout << enemy->getCollisionBox()->min << endl << enemy->getCollisionBox()->max << endl << endl;
 
     return false;
 }
 
+void Tema2::UpdateCameraPos() {
+    float cameraDistance = 0;
+    if (!firstPersonCamera)
+        cameraDistance = camera->distanceToTarget;
+
+    glm::vec3 cameraPosVec = player->translation - camera->forward * cameraDistance;
+    camera->position = glm::vec3(cameraPosVec.x, camera->position.y, cameraPosVec.z);
+}
+
 void Tema2::UpdatePlayer() {
     glm::vec3 oldTranslation = player->translation; // translation before current movement   
-    player->translation = tmpPlayerTranslate;
+    player->translation = player->deltaTranslation;
 
     if (HandleColl_PlayerWall() == true) { // TODO: only if player has moved
         player->translation = oldTranslation;
     }
     else {
-        float cameraDistance = 0;
-        if (!firstPersonCamera)
-            cameraDistance = camera->distanceToTarget;
-
-        glm::vec3 cameraPosVec = player->translation - camera->forward * cameraDistance;
-        camera->position = glm::vec3(cameraPosVec.x, camera->position.y, cameraPosVec.z);
+        UpdateCameraPos();
     }
 
     player->modelMatrix = glm::translate(glm::mat4(1), player->translation);
@@ -275,14 +280,35 @@ void Tema2::UpdateWalls() {
 void Tema2::UpdateEnemies(float deltaTimeSeconds) {
     vector<Enemy*>::iterator it;
     for (it = enemies.begin(); it < enemies.end(); it++) {
-        float speed = 2.f;
+        float speed = 2.5f;
         float dist = deltaTimeSeconds * speed;
 
         (*it)->translation += (*it)->directions[(*it)->currDir] * dist;
         (*it)->modelMatrix = glm::translate(glm::mat4(1), (*it)->translation);
 
-        if (HandleColl_EnemyWalls(*it)) {
-            cout << "yee";
+        // if (HandleColl_EnemyWalls(*it)) { // version with movement restricted by walls
+        // movement restricted by current cell
+        bool reachedWall = false;
+
+        float x_size_halved = (*it)->size.x / 2;
+        float z_size_halved = (*it)->size.z / 2;
+
+        switch ((*it)->currDir) {
+        case 0: //OX +
+            if ((*it)->translation.x >= 1 - x_size_halved)
+                reachedWall = true;
+        case 1: //OZ +
+            if ((*it)->translation.z >= 1 - z_size_halved)
+                reachedWall = true;
+        case 2: //OX -
+            if ((*it)->translation.x <= -1 + x_size_halved)
+                reachedWall = true;
+        default: // case 3: OZ -
+            if ((*it)->translation.z <= -1 + z_size_halved)
+                reachedWall = true;
+        }
+
+        if (reachedWall) {
             // Revert translation that led to collision
             (*it)->translation -= (*it)->directions[(*it)->currDir] * dist;
             (*it)->ChangeDir();
@@ -291,17 +317,40 @@ void Tema2::UpdateEnemies(float deltaTimeSeconds) {
         RenderEntity(*it);
     }
 }
-void Tema2::Update(float deltaTimeSeconds)
-{
-    UpdatePlayer();
-    UpdateWalls();
-    UpdateEnemies(deltaTimeSeconds);
 
+void Tema2::UpdateCrosshair() {
     if (firstPersonCamera) {
         // Render crosshair in hud camera
         glm::mat4 crosshairModelMat = glm::scale(glm::mat4(1), glm::vec3(0.3));
         RenderSimpleMesh(meshes["green_cube"], shaders["NewShader"], crosshairModelMat, projectionMatrixOrtho);
     }
+}
+
+void Tema2::UpdateBar() {
+    glm::mat4 maxHealthModelMatrix = glm::mat4(1);
+    maxHealthModelMatrix = glm::translate(maxHealthModelMatrix, glm::vec3(20, 15, 0));
+    maxHealthModelMatrix = glm::scale(maxHealthModelMatrix, glm::vec3(4, 1, 1));
+    // Translate so that the left corner would have its X,Y coordinates in the origin
+    maxHealthModelMatrix = glm::translate(maxHealthModelMatrix, glm::vec3(1, 1, 0));
+
+    glm::mat4 currHealthModelMatrix = glm::mat4(1);
+    currHealthModelMatrix = glm::translate(currHealthModelMatrix, glm::vec3(20, 15, 0));
+    currHealthModelMatrix = glm::scale(currHealthModelMatrix, glm::vec3((float)(player->health / 100), 1, 1));
+    currHealthModelMatrix = glm::scale(currHealthModelMatrix, glm::vec3(4, 1, 1));
+    currHealthModelMatrix = glm::translate(currHealthModelMatrix, glm::vec3(1, 1, 0));
+
+    RenderSimpleMesh(meshes["green_cube"], shaders["NewShader"], currHealthModelMatrix, projectionMatrixOrtho);
+    RenderSimpleMesh(meshes["red_cube"], shaders["NewShader"], maxHealthModelMatrix, projectionMatrixOrtho);
+
+}
+void Tema2::Update(float deltaTimeSeconds)
+{
+    UpdatePlayer();
+    UpdateWalls();
+    UpdateEnemies(deltaTimeSeconds);
+    UpdateCrosshair();
+    UpdateBar();
+
 }
 
 
@@ -320,23 +369,23 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
         window->KeyHold(GLFW_KEY_A) ||
         window->KeyHold(GLFW_KEY_D)) {
 
-        tmpPlayerTranslate = player->translation;
+        player->deltaTranslation = player->translation;
 
 
         if (window->KeyHold(GLFW_KEY_W)) {
-            tmpPlayerTranslate += glm::vec3(camera->forward.x, 0, camera->forward.z) * playerSpeed * deltaTime;
+            player->deltaTranslation += glm::vec3(camera->forward.x, 0, camera->forward.z) * playerSpeed * deltaTime;
         }
 
         if (window->KeyHold(GLFW_KEY_S)) {
-            tmpPlayerTranslate += glm::vec3(camera->forward.x, 0, camera->forward.z) * (-playerSpeed) * deltaTime;
+            player->deltaTranslation += glm::vec3(camera->forward.x, 0, camera->forward.z) * (-playerSpeed) * deltaTime;
         }
 
         if (window->KeyHold(GLFW_KEY_A)) {
-            tmpPlayerTranslate += camera->right * (-playerSpeed) * deltaTime;
+            player->deltaTranslation += camera->right * (-playerSpeed) * deltaTime;
         }
 
         if (window->KeyHold(GLFW_KEY_D)) {
-            tmpPlayerTranslate += camera->right * playerSpeed * deltaTime;
+            player->deltaTranslation += camera->right * playerSpeed * deltaTime;
         }
     }
 

@@ -8,7 +8,9 @@ using namespace tema2;
 using namespace std;
 
 Player::Player() {
+    health = 50;
     translation = glm::vec3(0);
+    deltaTranslation = glm::vec3(0);
     modelMatrix = glm::mat4(1); // global model matrix
     modelMatrix = glm::scale(modelMatrix, glm::vec3(0.1f));
     Create();

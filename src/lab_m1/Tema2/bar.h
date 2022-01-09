@@ -5,23 +5,16 @@
 #include "lab_m1/Tema2/collision.h"
 
 namespace tema2 {
-	class Player : public Entity
+	class Bar : public Entity
 	{
 	public:
-		Player();
-		AABB* getCollisionBox();
-
-		float health;
-		glm::vec3 translation;
-		glm::vec3 deltaTranslation;
+		Bar(glm::vec3 pos);
 		std::vector<Entity::Primitive> const& getPrimitives();
 
-	private:		
+	private:
 		void Create();
-		void InitCollisionBox();
 
+		glm::vec3 pos;
 		std::vector<Entity::Primitive> primitives;
-		AABB collisionBox;
-		AABB updatedCollisionBox;
 	};
 }

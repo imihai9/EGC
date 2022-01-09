@@ -13,10 +13,6 @@ namespace tema2 {
 		vector<vector<int>> getMatrix();
 
 	private:
-		// 0 = empty space
-		// 1 = wall
-		// 2 = enemy
-
 		vector<vector<int>> matrix;
 	};
 }
