@@ -35,7 +35,7 @@ void Tema2::Init()
     firstPersonCamera = false;
 
     camera = new tema2::Camera();
-    //camera->Set(glm::vec3(0, 2, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
+    camera->Set(glm::vec3(0, 2, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
 
     FOV_angle = 60.f;
     ortho_x = 30.f;
@@ -57,6 +57,8 @@ void Tema2::Init()
     CreateCube("blue_cube", glm::vec3(0.22f, 0.25f, 0.58f));
 
     player = new Player();
+    player->translation = camera->GetTargetPositionReverse();
+
     maze = new Maze();
     InitMaze();
 }
@@ -118,7 +120,7 @@ Mesh* Tema2::CreateMesh(const char* name, const std::vector<VertexFormat>& verti
     return meshes[name];
 }
 
-void Tema2::CreateCube(const char *name, glm::vec3 color) {
+void Tema2::CreateCube(const char* name, glm::vec3 color) {
     {
         vector<VertexFormat> vertices
         {
@@ -207,30 +209,38 @@ bool Tema2::HandleCollisions() {
     return false;
 }
 
+glm::vec3 tmpPlayerTranslate;
+
 void Tema2::UpdatePlayer() {
-       /* glm::mat4 old_cbox_modelMatrix = glm::mat4(1);
-        old_cbox_modelMatrix = glm::translate(old_cbox_modelMatrix, player->translation);
-        old_cbox_modelMatrix = glm::translate(old_cbox_modelMatrix, glm::vec3(0, 0.725f, 0));
-        old_cbox_modelMatrix = glm::scale(old_cbox_modelMatrix, glm::vec3(0.6f / 2.f, 1.45f / 2.f, 0.6f / 2.f));*/
-    
-    
-    glm::vec3 targetPos = glm::vec3(1);
-    
+    /*
     if (firstPersonCamera)
-        targetPos = camera->GetTargetPositionFPS();
+        playerPos = camera->GetTargetPositionFPS();
     else
-        targetPos = camera->GetTargetPosition();
+        playerPos = camera->GetTargetPosition();
+    */
 
-    
-    glm::vec3 oldTranslation = player->translation; // translation before current movement
-    player->translation = glm::vec3(targetPos.x, 0.f, targetPos.z);
+    glm::vec3 oldTranslation = player->translation; // translation before current movement   
+    player->translation = tmpPlayerTranslate;
 
-    if (HandleCollisions() == true) {
+    if (HandleCollisions() == true) { // TODO: only if player has moved
         player->translation = oldTranslation;
+    }
+    else {
+        glm::vec3 cameraPosVec = player->translation - camera->forward * camera->distanceToTarget;
+        camera->position = glm::vec3 (cameraPosVec.x, camera->position.y, cameraPosVec.z);
+
+        //glm::vec3 distance = player->translation - oldTranslation;
+        //  if (distance.x != 0)
+        //      camera->TranslateRight(distance.x);
+        //  if (distance.z != 0)
+        //      camera->MoveForward(distance.z);
     }
 
     player->modelMatrix = glm::translate(glm::mat4(1), player->translation);
     player->modelMatrix = glm::rotate(player->modelMatrix, playerRotateAngle, glm::vec3(0, 1, 0));
+
+    if (renderPlayer)
+        RenderEntity(player);
 
     //// Collision box render test
     glm::mat4 cbox_modelMatrix = glm::mat4(1);
@@ -239,8 +249,6 @@ void Tema2::UpdatePlayer() {
     cbox_modelMatrix = glm::scale(cbox_modelMatrix, glm::vec3(0.6f / 2.f, 1.45f / 2.f, 0.6f / 2.f));
     RenderSimpleMesh(meshes["yellow_cube"], shaders["NewShader"], cbox_modelMatrix);
 
-    if (renderPlayer)
-        RenderEntity(player);
 }
 
 void Tema2::UpdateWalls() {
@@ -265,21 +273,31 @@ void Tema2::FrameEnd()
 void Tema2::OnInputUpdate(float deltaTime, int mods)
 {
     float cameraSpeed = 2.0f;
-        
-    if (window->KeyHold(GLFW_KEY_W)) {
-        camera->MoveForward(cameraSpeed * deltaTime);
-    }
+    float playerSpeed = 2.0f;
 
-    if (window->KeyHold(GLFW_KEY_A)) {
-        camera->TranslateRight(-cameraSpeed * deltaTime);
-    }
+    if (window->KeyHold(GLFW_KEY_W) ||
+        window->KeyHold(GLFW_KEY_S) ||
+        window->KeyHold(GLFW_KEY_A) ||
+        window->KeyHold(GLFW_KEY_D)) {
 
-    if (window->KeyHold(GLFW_KEY_S)) {
-        camera->MoveForward(-cameraSpeed * deltaTime);
-    }
+        tmpPlayerTranslate = player->translation;
 
-    if (window->KeyHold(GLFW_KEY_D)) {
-        camera->TranslateRight(cameraSpeed * deltaTime);
+
+        if (window->KeyHold(GLFW_KEY_W)) {
+            tmpPlayerTranslate += glm::vec3(camera->forward.x, 0, camera->forward.z) * playerSpeed * deltaTime;
+        }
+
+        if (window->KeyHold(GLFW_KEY_S)) {
+            tmpPlayerTranslate += glm::vec3(camera->forward.x, 0, camera->forward.z) * (-playerSpeed) * deltaTime;
+        }
+
+        if (window->KeyHold(GLFW_KEY_A)) {
+            tmpPlayerTranslate += camera->right * (-playerSpeed) * deltaTime;
+        }
+
+        if (window->KeyHold(GLFW_KEY_D)) {
+            tmpPlayerTranslate += camera->right * playerSpeed * deltaTime;
+        }
     }
 
     if (window->KeyHold(GLFW_KEY_Q)) {
@@ -290,6 +308,7 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
         camera->TranslateUpward(-cameraSpeed * deltaTime);
     }
 }
+
 
 
 void Tema2::OnKeyPress(int key, int mods)

@@ -43,8 +43,6 @@ namespace tema2
             // walk forward, then you will still keep the same relative
             // distance (height) to the ground!
 
-            // y = 0 pt ca nu deplasam pe verticala, dar tinem cont de orientare
-            // in planul XoZ!!!
             glm::vec3 dir = glm::normalize(glm::vec3(forward.x, 0, forward.z)); // vector normalizat
             position += dir * distance;
         }
@@ -132,6 +130,11 @@ namespace tema2
         glm::vec3 GetTargetPositionFPS()
         {
             return position;
+        }
+
+        glm::vec3 GetTargetPositionReverse()
+        {
+            return position - forward * distanceToTarget;
         }
 
     public:
