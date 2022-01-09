@@ -33,7 +33,7 @@ namespace m1
         void OnWindowResize(int width, int height) override;
 
         void RenderEntity(tema2::Entity* entity);
-        void RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix);
+        void RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, const glm::mat4& projMatrix);
         Mesh* CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices);
         void CreateCube(const char *name, glm::vec3 color);
         void InitMaze();
@@ -43,12 +43,16 @@ namespace m1
 
     protected:
         Camera* camera;
+        Camera* hudCamera;
 
         tema2::Player* player;
         tema2::Maze* maze;
         std::vector<tema2::Wall*> walls;
 
         glm::mat4 projectionMatrix;
+        glm::mat4 projectionMatrixOrtho;
+        glm::mat4 projectionMatrixPersp;
+
         bool renderPlayer;
 
         bool firstPersonCamera;

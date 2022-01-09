@@ -37,12 +37,16 @@ void Tema2::Init()
     camera = new tema2::Camera();
     camera->Set(glm::vec3(0, 2, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
 
+    hudCamera = new tema2::Camera();
+    hudCamera->position = glm::vec3(0);
+
     FOV_angle = 60.f;
     ortho_x = 30.f;
     ortho_y = 20.f;
 
-    projectionMatrix = glm::perspective(RADIANS(FOV_angle), window->props.aspectRatio, 0.01f, 200.0f);
-
+    projectionMatrix = glm::perspective(RADIANS(FOV_angle), window->props.aspectRatio, 0.01f, 200.0f);// todo delete
+    projectionMatrixOrtho = glm::ortho(-ortho_x, ortho_x, -ortho_y, ortho_y, 0.01f, 200.f);
+    projectionMatrixPersp = glm::perspective(RADIANS(FOV_angle), window->props.aspectRatio, 0.01f, 200.0f);
     // Create a shader program
     {
         Shader* shader = new Shader("NewShader");
@@ -147,7 +151,7 @@ void Tema2::CreateCube(const char* name, glm::vec3 color) {
     }
 }
 
-void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix)
+void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, const glm::mat4 &projMatrix)
 {
     if (!mesh || !shader || !shader->GetProgramID())
         return;
@@ -158,7 +162,13 @@ void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelM
     int modelLocation = glGetUniformLocation(shader->program, "Model");
     glUniformMatrix4fv(modelLocation, 1, GL_FALSE, &modelMatrix[0][0]);
 
-    glm::mat4 viewMatrix = camera->GetViewMatrix();
+    glm::mat4 viewMatrix;
+    
+    if (projMatrix == projectionMatrixPersp)
+        viewMatrix = camera->GetViewMatrix();
+    else if (projMatrix == projectionMatrixOrtho)
+        viewMatrix = hudCamera->GetViewMatrix();
+
     int viewLocation = glGetUniformLocation(shader->program, "View");
     glUniformMatrix4fv(viewLocation, 1, GL_FALSE, &viewMatrix[0][0]);
 
@@ -166,7 +176,7 @@ void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelM
     glUniform1f(timeLocation, Engine::GetElapsedTime());
 
     int projectionLocation = glGetUniformLocation(shader->program, "Projection");
-    glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, &projectionMatrix[0][0]);
+    glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, &projMatrix[0][0]);
 
     // Draw the object
     glBindVertexArray(mesh->GetBuffers()->m_VAO);
@@ -178,7 +188,8 @@ void Tema2::RenderEntity(Entity* entity) {
     vector<Entity::Primitive> primitives = entity->getPrimitives();
 
     for (Entity::Primitive primitive : primitives) {
-        RenderSimpleMesh(meshes[primitive.name], shaders["NewShader"], entity->modelMatrix * primitive.modelMatrix);
+        RenderSimpleMesh(meshes[primitive.name], shaders["NewShader"], entity->modelMatrix * primitive.modelMatrix,
+            projectionMatrixPersp);
     }
 }
 
@@ -212,13 +223,6 @@ bool Tema2::HandleCollisions() {
 glm::vec3 tmpPlayerTranslate;
 
 void Tema2::UpdatePlayer() {
-    /*
-    if (firstPersonCamera)
-        playerPos = camera->GetTargetPositionFPS();
-    else
-        playerPos = camera->GetTargetPosition();
-    */
-
     glm::vec3 oldTranslation = player->translation; // translation before current movement   
     player->translation = tmpPlayerTranslate;
 
@@ -226,14 +230,12 @@ void Tema2::UpdatePlayer() {
         player->translation = oldTranslation;
     }
     else {
-        glm::vec3 cameraPosVec = player->translation - camera->forward * camera->distanceToTarget;
-        camera->position = glm::vec3 (cameraPosVec.x, camera->position.y, cameraPosVec.z);
+        float cameraDistance = 0;
+        if (!firstPersonCamera)
+            cameraDistance = camera->distanceToTarget;
 
-        //glm::vec3 distance = player->translation - oldTranslation;
-        //  if (distance.x != 0)
-        //      camera->TranslateRight(distance.x);
-        //  if (distance.z != 0)
-        //      camera->MoveForward(distance.z);
+        glm::vec3 cameraPosVec = player->translation - camera->forward * cameraDistance;
+        camera->position = glm::vec3(cameraPosVec.x, camera->position.y, cameraPosVec.z);
     }
 
     player->modelMatrix = glm::translate(glm::mat4(1), player->translation);
@@ -242,13 +244,12 @@ void Tema2::UpdatePlayer() {
     if (renderPlayer)
         RenderEntity(player);
 
-    //// Collision box render test
-    glm::mat4 cbox_modelMatrix = glm::mat4(1);
-    cbox_modelMatrix = glm::translate(cbox_modelMatrix, player->translation);
-    cbox_modelMatrix = glm::translate(cbox_modelMatrix, glm::vec3(0, 0.725f, 0));
-    cbox_modelMatrix = glm::scale(cbox_modelMatrix, glm::vec3(0.6f / 2.f, 1.45f / 2.f, 0.6f / 2.f));
-    RenderSimpleMesh(meshes["yellow_cube"], shaders["NewShader"], cbox_modelMatrix);
-
+    ////// Collision box render test
+    //glm::mat4 cbox_modelMatrix = glm::mat4(1);
+    //cbox_modelMatrix = glm::translate(cbox_modelMatrix, player->translation);
+    //cbox_modelMatrix = glm::translate(cbox_modelMatrix, glm::vec3(0, 0.725f, 0));
+    //cbox_modelMatrix = glm::scale(cbox_modelMatrix, glm::vec3(0.6f / 2.f, 1.45f / 2.f, 0.6f / 2.f));
+    //RenderSimpleMesh(meshes["yellow_cube"], shaders["NewShader"], cbox_modelMatrix);
 }
 
 void Tema2::UpdateWalls() {
@@ -262,6 +263,12 @@ void Tema2::Update(float deltaTimeSeconds)
 {
     UpdatePlayer();
     UpdateWalls();
+
+    if (firstPersonCamera) {
+        // Render crosshair in hud camera
+        glm::mat4 crosshairModelMat = glm::scale(glm::mat4(1), glm::vec3(0.3));
+        RenderSimpleMesh(meshes["green_cube"], shaders["NewShader"], crosshairModelMat, projectionMatrixOrtho);
+    }
 }
 
 
@@ -308,8 +315,6 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
         camera->TranslateUpward(-cameraSpeed * deltaTime);
     }
 }
-
-
 
 void Tema2::OnKeyPress(int key, int mods)
 {
