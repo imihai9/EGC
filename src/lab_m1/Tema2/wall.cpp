@@ -14,13 +14,20 @@ Wall::Wall(glm::vec3 pos) { // pos = cube center position
     modelMatrix = glm::mat4(1); // global model matrix
     this->pos = pos;
     Create();
+    InitCollisionBox();
 }
 
 void Wall::Create() {
     glm::mat4 matrix = glm::translate(glm::mat4(1), pos);
     primitives.push_back({ "blue_cube" , matrix});
-  //  collisionBox.center = pos;
-  //  collisionBox.size = glm::vec3(2);
+}
+
+void Wall::InitCollisionBox() {
+    // A wall is a cube of size 
+    // collisionBox.center = pos;
+    // collisionBox.size = glm::vec3(2);
+    collisionBox.min = glm::vec3(pos.x - 1, pos.y - 1, pos.z - 1);
+    collisionBox.max = glm::vec3(pos.x + 1, pos.y + 1, pos.z + 1);
 }
 
 std::vector<Entity::Primitive> const& Wall::getPrimitives() {
@@ -29,17 +36,5 @@ std::vector<Entity::Primitive> const& Wall::getPrimitives() {
 
 // Returns the collision box
 AABB* Wall::getCollisionBox() {
-    // A wall is a cube of size 
-    collisionBox.minX = pos.x - 1;
-    collisionBox.maxX = pos.x + 1;
-    collisionBox.minY = pos.y - 1;
-    collisionBox.maxY = pos.y + 1;
-    collisionBox.minZ = pos.z - 1;
-    collisionBox.maxZ = pos.z + 1;
-
-    //cout << "w x: " << collisionBox.minX << ' ' << collisionBox.maxX << endl;
-  //  cout << "w y: " << collisionBox.minY << ' ' << collisionBox.maxY << endl;
-   // cout << "w z: " << collisionBox.minZ << ' ' << collisionBox.maxZ << endl;
-
     return &collisionBox;
 }

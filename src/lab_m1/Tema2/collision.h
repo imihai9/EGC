@@ -4,9 +4,8 @@
 
 // Rectangle Collision Box
 struct AABB {
-	float minX, maxX;
-	float minY, maxY;
-	float minZ, maxZ;
+	glm::vec3 min; // minX, minY, minZ
+	glm::vec3 max; // maxX, maxY, maxZ
 };
 
 bool CheckCollisionAABB (AABB *aabb1, AABB *aabb2);

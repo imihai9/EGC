@@ -8,27 +8,27 @@ using namespace tema2;
 using namespace std;
 
 Player::Player() {
-    translateX = translateY = 0;
+    translation = glm::vec3(0);
     modelMatrix = glm::mat4(1); // global model matrix
     modelMatrix = glm::scale(modelMatrix, glm::vec3(0.1f));
     Create();
-
+    InitCollisionBox();
 }
 
-void printMatrix(glm::mat4 mat) {
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            cout << mat[i][j] << ' ';
-        }
-        cout << '\n';
-    }
+void Player::InitCollisionBox() {
+    // scale: 0.6f, 1.45f, 0.6f
+    // initial translate: 0, 0.725f, 0
+    /* => initial sizes: 
+        minX= -0.3f
+        maxX= 0.3f
+        minY= 0         (on ground)
+        maxY= 1.45f     (height)
+        minZ= -0.3f
+        maxZ= 0.3f
+    */
 
-}
-
-void printVector(glm::vec3 vec) {
-    for (int i = 0; i < 3; i++) {
-        cout << vec[i] << ' ';
-    }
+    collisionBox.min = glm::vec3(-0.3f, 0, -0.3f);
+    collisionBox.max = glm::vec3(0.3f, 1.45f, 0.3f);
 }
 
 void Player::Create() {
@@ -112,42 +112,14 @@ void Player::Create() {
 std::vector<Entity::Primitive> const& Player::getPrimitives() {
     return primitives;
 }
-
-vector<glm::vec3> canonicalCube = {
-    glm::vec3(-1, -1,  1),
-    glm::vec3(1, -1,  1),
-    glm::vec3(-1,  1,  1),
-    glm::vec3(1,  1,  1),
-    glm::vec3(-1, -1, -1),
-    glm::vec3(1, -1, -1),
-    glm::vec3(-1,  1, -1),
-    glm::vec3(1,  1, -1)
-};
-
 // updates and returns the collision box
 AABB* Player::getCollisionBox() {
-    // Collision box render test
-    glm::mat4 cbox_modelMatrix = this->modelMatrix;
-    cbox_modelMatrix = glm::translate(cbox_modelMatrix, glm::vec3(0, 0.725f, 0));
-    cbox_modelMatrix = glm::scale(cbox_modelMatrix, glm::vec3(0.8f / 2.f, 1.45f / 2.f, 0.2f / 2.f));
-
-    glm::vec3 cbox_vertex = cbox_modelMatrix * glm::vec4(canonicalCube[0], 1);
-    collisionBox.minX = collisionBox.maxX = cbox_vertex.x;
-    collisionBox.minY = collisionBox.maxY = cbox_vertex.y;
-    collisionBox.minZ = collisionBox.maxZ = cbox_vertex.z;
-
-    for (int i = 1; i < canonicalCube.size(); i++) {
-        glm::vec3 cbox_vertex = cbox_modelMatrix * glm::vec4(canonicalCube[i], 1);
-        collisionBox.minX = min(collisionBox.minX, cbox_vertex.x);
-        collisionBox.minY = min(collisionBox.minY, cbox_vertex.y);
-        collisionBox.minZ = min(collisionBox.minZ, cbox_vertex.z);
-        collisionBox.maxX = max(collisionBox.maxX, cbox_vertex.x);
-        collisionBox.maxY = max(collisionBox.maxY, cbox_vertex.y);
-        collisionBox.maxZ = max(collisionBox.maxZ, cbox_vertex.z);
-    }
+    
+    updatedCollisionBox.min = collisionBox.min + this->translation;
+    updatedCollisionBox.max = collisionBox.max + this->translation;
 
     //cout << "p x: " << collisionBox.minX << ' ' << collisionBox.maxX << endl;
    // cout << "p y: " << collisionBox.minY << ' ' << collisionBox.maxY << endl;
    // cout << "p z: " << collisionBox.minZ << ' ' << collisionBox.maxZ << endl;
-    return &collisionBox;
+    return &updatedCollisionBox;
 }

@@ -58,5 +58,9 @@ namespace m1
         float ortho_y;
 
         float playerRotateAngle = 0;
+
+        float player_tx = 0; // 
+        float player_ty = 0; //
+        float player_tz = 0; //
     };
 }   // namespace m1

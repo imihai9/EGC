@@ -10,6 +10,7 @@ namespace tema2 {
 	public:
 		Wall(glm::vec3 pos);
 		void Create();
+		void InitCollisionBox();
 
 		std::vector<glm::mat4> const& getModelMatrices();
 		std::vector<Entity::Primitive> const& getPrimitives();

@@ -10,9 +10,9 @@ namespace tema2 {
 	public:
 		Player();
 		void Create();
+		void InitCollisionBox();
 
-		float translateX;
-		float translateY;
+		glm::vec3 translation;
 
 		std::vector<glm::mat4> const& getModelMatrices();
 		std::vector<Entity::Primitive> const& getPrimitives();
@@ -21,5 +21,6 @@ namespace tema2 {
 	private:
 		std::vector<Entity::Primitive> primitives;
 		AABB collisionBox;
+		AABB updatedCollisionBox;
 	};
 }

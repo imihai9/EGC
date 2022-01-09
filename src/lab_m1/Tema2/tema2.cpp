@@ -208,6 +208,12 @@ bool Tema2::HandleCollisions() {
 }
 
 void Tema2::UpdatePlayer() {
+       /* glm::mat4 old_cbox_modelMatrix = glm::mat4(1);
+        old_cbox_modelMatrix = glm::translate(old_cbox_modelMatrix, player->translation);
+        old_cbox_modelMatrix = glm::translate(old_cbox_modelMatrix, glm::vec3(0, 0.725f, 0));
+        old_cbox_modelMatrix = glm::scale(old_cbox_modelMatrix, glm::vec3(0.6f / 2.f, 1.45f / 2.f, 0.6f / 2.f));*/
+    
+    
     glm::vec3 targetPos = glm::vec3(1);
     
     if (firstPersonCamera)
@@ -215,23 +221,26 @@ void Tema2::UpdatePlayer() {
     else
         targetPos = camera->GetTargetPosition();
 
-    glm::mat4 oldModelMatrix = player->modelMatrix;
+    
+    glm::vec3 oldTranslation = player->translation; // translation before current movement
+    player->translation = glm::vec3(targetPos.x, 0.f, targetPos.z);
 
-    player->modelMatrix = glm::translate(glm::mat4(1), glm::vec3(targetPos.x, 0.f, targetPos.z));
+    if (HandleCollisions() == true) {
+        player->translation = oldTranslation;
+    }
+
+    player->modelMatrix = glm::translate(glm::mat4(1), player->translation);
     player->modelMatrix = glm::rotate(player->modelMatrix, playerRotateAngle, glm::vec3(0, 1, 0));
 
-    if (HandleCollisions() == true)
-        player->modelMatrix = oldModelMatrix;
+    //// Collision box render test
+    glm::mat4 cbox_modelMatrix = glm::mat4(1);
+    cbox_modelMatrix = glm::translate(cbox_modelMatrix, player->translation);
+    cbox_modelMatrix = glm::translate(cbox_modelMatrix, glm::vec3(0, 0.725f, 0));
+    cbox_modelMatrix = glm::scale(cbox_modelMatrix, glm::vec3(0.6f / 2.f, 1.45f / 2.f, 0.6f / 2.f));
+    RenderSimpleMesh(meshes["yellow_cube"], shaders["NewShader"], cbox_modelMatrix);
 
     if (renderPlayer)
         RenderEntity(player);
-
-    // Collision box render test
-    glm::mat4 cbox_modelMatrix = glm::mat4(1);
-    cbox_modelMatrix = glm::translate(cbox_modelMatrix, glm::vec3(0, 0.725f, 0));
-    cbox_modelMatrix = glm::scale(cbox_modelMatrix, glm::vec3(0.8f / 2.f, 1.45f / 2.f, 0.2f / 2.f));
-    RenderSimpleMesh(meshes["yellow_cube"], shaders["NewShader"], player->modelMatrix * cbox_modelMatrix);
-
 }
 
 void Tema2::UpdateWalls() {
