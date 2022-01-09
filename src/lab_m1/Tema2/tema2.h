@@ -5,6 +5,7 @@
 #include "lab_m1/Tema2/player.h"
 #include "lab_m1/Tema2/maze.h"
 #include "lab_m1/Tema2/wall.h"
+#include "lab_m1/Tema2/enemy.h"
 #include "lab_m1/Tema2/collision.h"
 using namespace tema2;
 
@@ -39,7 +40,9 @@ namespace m1
         void InitMaze();
         void UpdatePlayer();
         void UpdateWalls();
-        bool HandleCollisions();
+        void UpdateEnemies(float deltaTimeSeconds);
+        bool HandleColl_PlayerWall();
+        bool HandleColl_EnemyWalls(tema2::Enemy *enemy);
 
     protected:
         Camera* camera;
@@ -48,6 +51,7 @@ namespace m1
         tema2::Player* player;
         tema2::Maze* maze;
         std::vector<tema2::Wall*> walls;
+        std::vector<tema2::Enemy*> enemies;
 
         glm::mat4 projectionMatrix;
         glm::mat4 projectionMatrixOrtho;
@@ -62,9 +66,5 @@ namespace m1
         float ortho_y;
 
         float playerRotateAngle = 0;
-
-        float player_tx = 0; // 
-        float player_ty = 0; //
-        float player_tz = 0; //
     };
 }   // namespace m1

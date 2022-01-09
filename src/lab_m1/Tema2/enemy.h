@@ -5,20 +5,25 @@
 #include "lab_m1/Tema2/collision.h"
 
 namespace tema2 {
-	class Player : public Entity
+	class Enemy : public Entity
 	{
 	public:
-		Player();
+		Enemy(glm::vec3 pos);
 		AABB* getCollisionBox();
-
-		glm::vec3 translation;
-
+		void ChangeDir();
+		
 		std::vector<glm::mat4> const& getModelMatrices();
 		std::vector<Entity::Primitive> const& getPrimitives();
 
-	private:		
+		std::vector<glm::vec3> directions;
+		glm::vec3 translation;
+
+		int currDir; // 0/1/2/3
+	private:
 		void Create();
 		void InitCollisionBox();
+
+		glm::vec3 pos;
 
 		std::vector<Entity::Primitive> primitives;
 		AABB collisionBox;

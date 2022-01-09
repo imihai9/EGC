@@ -18,10 +18,13 @@ void Tema2::InitMaze() {
 
     for (int i = 0; i < mazeMat.size(); i++) {
         for (int j = 0; j < mazeMat[0].size(); j++) {
-            if (mazeMat[i][j] == 1) {
-                // Wall
+            if (mazeMat[i][j] == 1) { // Wall
                 Wall* wall = new Wall(glm::vec3(2 * i, 1, 2 * j));
                 walls.push_back(wall);
+            }
+            else if (mazeMat[i][j] == 2) { // Enemy
+                Enemy* enemy = new Enemy(glm::vec3(2 * i, 1, 2 * j));
+                enemies.push_back(enemy);
             }
             // 0, 2..
         }
@@ -59,6 +62,7 @@ void Tema2::Init()
     CreateCube("green_cube", glm::vec3(0.28f, 0.46f, 0.45f));
     CreateCube("yellow_cube", glm::vec3(0.87f, 0.8f, 0.7f));
     CreateCube("blue_cube", glm::vec3(0.22f, 0.25f, 0.58f));
+    CreateCube("red_cube", glm::vec3(0.54f, 0.f, 0.f));
 
     player = new Player();
     player->translation = camera->GetTargetPositionReverse();
@@ -188,8 +192,8 @@ void Tema2::RenderEntity(Entity* entity) {
     vector<Entity::Primitive> primitives = entity->getPrimitives();
 
     for (Entity::Primitive primitive : primitives) {
-        RenderSimpleMesh(meshes[primitive.name], shaders["NewShader"], entity->modelMatrix * primitive.modelMatrix,
-            projectionMatrixPersp);
+        RenderSimpleMesh(meshes[primitive.name], shaders["NewShader"], 
+            entity->modelMatrix * primitive.modelMatrix, projectionMatrixPersp);
     }
 }
 
@@ -204,29 +208,38 @@ void Tema2::FrameStart()
     glViewport(0, 0, resolution.x, resolution.y);
 }
 
-bool Tema2::HandleCollisions() {
+glm::vec3 tmpPlayerTranslate; // TODO: put in player
+
+bool Tema2::HandleColl_PlayerWall() {
     // {Player - Walls}
     vector<Wall*>::iterator it;
     for (it = walls.begin(); it < walls.end(); it++) {
         bool collided = CheckCollisionAABB((*it)->getCollisionBox(), player->getCollisionBox());
         if (collided)
             return true;
-        /*
-        if (collided) {
-           cout << "c";
-        }*/
     }
 
     return false;
 }
 
-glm::vec3 tmpPlayerTranslate;
+bool Tema2::HandleColl_EnemyWalls(Enemy *enemy) {
+    // {Enemy - Walls}
+    vector<Wall*>::iterator it;
+    for (it = walls.begin(); it < walls.end(); it++) {
+        bool collided = CheckCollisionAABB((*it)->getCollisionBox(), enemy->getCollisionBox());
+        if (collided)
+            return true;
+    }
+   // cout << enemy->getCollisionBox()->min << endl << enemy->getCollisionBox()->max << endl << endl;
+
+    return false;
+}
 
 void Tema2::UpdatePlayer() {
     glm::vec3 oldTranslation = player->translation; // translation before current movement   
     player->translation = tmpPlayerTranslate;
 
-    if (HandleCollisions() == true) { // TODO: only if player has moved
+    if (HandleColl_PlayerWall() == true) { // TODO: only if player has moved
         player->translation = oldTranslation;
     }
     else {
@@ -259,10 +272,30 @@ void Tema2::UpdateWalls() {
     }
 }
 
+void Tema2::UpdateEnemies(float deltaTimeSeconds) {
+    vector<Enemy*>::iterator it;
+    for (it = enemies.begin(); it < enemies.end(); it++) {
+        float speed = 2.f;
+        float dist = deltaTimeSeconds * speed;
+
+        (*it)->translation += (*it)->directions[(*it)->currDir] * dist;
+        (*it)->modelMatrix = glm::translate(glm::mat4(1), (*it)->translation);
+
+        if (HandleColl_EnemyWalls(*it)) {
+            cout << "yee";
+            // Revert translation that led to collision
+            (*it)->translation -= (*it)->directions[(*it)->currDir] * dist;
+            (*it)->ChangeDir();
+        }
+
+        RenderEntity(*it);
+    }
+}
 void Tema2::Update(float deltaTimeSeconds)
 {
     UpdatePlayer();
     UpdateWalls();
+    UpdateEnemies(deltaTimeSeconds);
 
     if (firstPersonCamera) {
         // Render crosshair in hud camera
@@ -318,10 +351,6 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 
 void Tema2::OnKeyPress(int key, int mods)
 {
-    if (key == GLFW_KEY_C) {
-        HandleCollisions();
-    }
-
     if (key == GLFW_KEY_X) {
         window->DisablePointer();
     }
