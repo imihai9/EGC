@@ -93,7 +93,6 @@ void Tema2::InitMaze() {
             }
             else if (mazeMat[i][j] == 3) { // Initial player pos
                 player->deltaTranslation = glm::vec3(2 * i, 0, 2 * j);
-                cout << "helo!";
                 UpdatePlayer();
             }
             else if (mazeMat[i][j] == 4) {
@@ -516,7 +515,7 @@ void Tema2::FrameStart() {
 
 void Tema2::Update(float deltaTimeSeconds)
 {
-    timeRemaining -= deltaTimeSeconds;
+    timeRemaining -= deltaTimeSeconds * 2;
     if (timeRemaining <= 0.01f) {
         GameOver();
     }
@@ -568,14 +567,6 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
             player->deltaTranslation += normalRight * player->speed * deltaTime;
         }
     }
-
-    if (window->KeyHold(GLFW_KEY_Q)) {
-        camera->TranslateUpward(cameraSpeed * deltaTime);
-    }
-    if (window->KeyHold(GLFW_KEY_E)) {
-        camera->TranslateUpward(-cameraSpeed * deltaTime);
-    }
-
 }
 
 void Tema2::OnKeyPress(int key, int mods)

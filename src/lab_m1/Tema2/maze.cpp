@@ -2,6 +2,8 @@
 #include "core/engine.h"
 #include "utils/gl_utils.h"
 #include <core/gpu/mesh.h>
+#include <fstream>
+#include <iostream>
 
 using namespace tema2;
 using namespace std;
@@ -61,9 +63,23 @@ Maze::Maze() {
 		{1,1,1,1,1,1,1,1,1,1,1}
 		});
 
-	//[0, 2]
-	//srand(time(NULL));
-	//int mazeNo = rand() % 3;
-	this->matrix = possibleMatrices[1];
+	possibleMatrices.push_back({
+		{1,1,1,1,1,1,1},
+		{1,3,2,0,0,2,1},
+		{1,1,1,0,1,0,1},
+		{1,0,0,2,0,0,1},
+		{1,2,1,1,1,2,1},
+		{1,0,2,0,1,0,1},
+		{1,1,1,4,1,1,1}
+		});
+
+	int mazeNo;
+
+	double seed = Engine::GetElapsedTime() * 10000;
+	glm::srand((unsigned int)seed);
+	for (int i = 0; i < 500; i++)
+		mazeNo = glm::rand() % 4;
+
+	this->matrix = possibleMatrices[mazeNo];
 
 }
