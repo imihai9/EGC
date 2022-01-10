@@ -36,13 +36,13 @@ void Tema2::InitMaze() {
 
 void Tema2::Init()
 {
-    window->DisablePointer(); //TODO: do this also on camera change
+    window->DisablePointer();
     renderPlayer = true;
     firstPersonCamera = false;
 
     camera = new tema2::Camera();
-    camera->Set(glm::vec3(0, 2, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
-
+   // camera->Set(glm::vec3(0, 2, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
+    camera->Set(glm::vec3(0, 2.f, 3.5f), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
     hudCamera = new tema2::Camera();
     hudCamera->position = glm::vec3(0);
 
@@ -53,10 +53,18 @@ void Tema2::Init()
     projectionMatrix = glm::perspective(RADIANS(FOV_angle), window->props.aspectRatio, 0.01f, 200.0f);// todo delete
     projectionMatrixOrtho = glm::ortho(-ortho_x, ortho_x, -ortho_y, ortho_y, 0.01f, 200.f);
     projectionMatrixPersp = glm::perspective(RADIANS(FOV_angle), window->props.aspectRatio, 0.01f, 200.0f);
-    // Create a shader program
-    {
+    
+    { // Create general shader
         Shader* shader = new Shader("NewShader");
         shader->AddShader(PATH_JOIN(window->props.selfDir, SOURCE_PATH::M1, "Tema2", "shaders", "VertexShader.glsl"), GL_VERTEX_SHADER);
+        shader->AddShader(PATH_JOIN(window->props.selfDir, SOURCE_PATH::M1, "Tema2", "shaders", "FragmentShader.glsl"), GL_FRAGMENT_SHADER);
+        shader->CreateAndLink();
+        shaders[shader->GetName()] = shader;
+    }
+
+    { // Create shader for projectle
+        Shader* shader = new Shader("ProjectileShader");
+        shader->AddShader(PATH_JOIN(window->props.selfDir, SOURCE_PATH::M1, "Tema2", "shaders", "ProjectileVertexShader.glsl"), GL_VERTEX_SHADER);
         shader->AddShader(PATH_JOIN(window->props.selfDir, SOURCE_PATH::M1, "Tema2", "shaders", "FragmentShader.glsl"), GL_FRAGMENT_SHADER);
         shader->CreateAndLink();
         shaders[shader->GetName()] = shader;
@@ -66,6 +74,11 @@ void Tema2::Init()
     CreateCube("yellow_cube", glm::vec3(0.87f, 0.8f, 0.7f));
     CreateCube("blue_cube", glm::vec3(0.22f, 0.25f, 0.58f));
     CreateCube("red_cube", glm::vec3(0.54f, 0.f, 0.f));
+    {
+        Mesh* mesh = new Mesh("sphere");
+        mesh->LoadMesh(PATH_JOIN(window->props.selfDir, RESOURCE_PATH::MODELS, "primitives"), "sphere.obj");
+        meshes[mesh->GetMeshID()] = mesh;
+    }
 
     player = new Player();
     player->translation = camera->GetTargetPositionReverse();
@@ -75,8 +88,7 @@ void Tema2::Init()
 }
 
 // Lab 6
-Mesh* Tema2::CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices)
-{
+Mesh* Tema2::CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices) {
     unsigned int VAO = 0;
     // Create the VAO and bind it
     glGenVertexArrays(1, &VAO);
@@ -158,8 +170,7 @@ void Tema2::CreateCube(const char* name, glm::vec3 color) {
     }
 }
 
-void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, const glm::mat4& projMatrix)
-{
+void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, const glm::mat4& projMatrix) {
     if (!mesh || !shader || !shader->GetProgramID())
         return;
 
@@ -191,49 +202,13 @@ void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelM
 }
 
 
-void Tema2::RenderEntity(Entity* entity) {
+void Tema2::RenderEntity(Entity* entity, const char *shader) {
     vector<Entity::Primitive> primitives = entity->getPrimitives();
 
     for (Entity::Primitive primitive : primitives) {
-        RenderSimpleMesh(meshes[primitive.name], shaders["NewShader"],
+        RenderSimpleMesh(meshes[primitive.name], shaders[shader],
             entity->modelMatrix * primitive.modelMatrix, projectionMatrixPersp);
     }
-}
-
-void Tema2::FrameStart()
-{
-    // Clears the color buffer (using the previously set color) and depth buffer
-    glClearColor(0, 0, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glm::ivec2 resolution = window->GetResolution();
-    // Sets the screen area where to draw
-    glViewport(0, 0, resolution.x, resolution.y);
-}
-
-
-bool Tema2::HandleColl_PlayerWall() {
-    // {Player - Walls}
-    vector<Wall*>::iterator it;
-    for (it = walls.begin(); it < walls.end(); it++) {
-        bool collided = CheckCollisionAABB((*it)->getCollisionBox(), player->getCollisionBox());
-        if (collided)
-            return true;
-    }
-
-    return false;
-}
-
-bool Tema2::HandleColl_EnemyWalls(Enemy* enemy) {
-    // {Enemy - Walls}
-    vector<Wall*>::iterator it;
-    for (it = walls.begin(); it < walls.end(); it++) {
-        bool collided = CheckCollisionAABB((*it)->getCollisionBox(), enemy->getCollisionBox());
-        if (collided)
-            return true;
-    }
-
-    return false;
 }
 
 void Tema2::UpdateCameraPos() {
@@ -245,35 +220,109 @@ void Tema2::UpdateCameraPos() {
     camera->position = glm::vec3(cameraPosVec.x, camera->position.y, cameraPosVec.z);
 }
 
+void Tema2::ChangePerspective() {
+    window->DisablePointer();
+
+    firstPersonCamera = !firstPersonCamera;
+    if (firstPersonCamera) {
+        FOV_angle = 90.f;
+        camera->TranslateForward(camera->distanceToTarget);
+        renderPlayer = false;
+    }
+    else {
+        FOV_angle = 60.f;
+        camera->TranslateForward(-camera->distanceToTarget);
+        renderPlayer = true;
+    }
+
+    // Update projeciton matrix with new FOV
+    projectionMatrixPersp = glm::perspective(RADIANS(FOV_angle), window->props.aspectRatio, 0.01f, 200.0f);
+}
+
+
+
+bool Tema2::DetectCollision_PlayerWalls() {
+    vector<Wall*>::iterator it;
+    for (it = walls.begin(); it < walls.end(); it++) {
+        bool collided = CheckCollisionAABB((*it)->getCollisionBox(), player->getCollisionBox());
+        if (collided)
+            return true;
+    }
+
+    return false;
+}
+
+bool Tema2::DetectCollision_EnemyWalls(Enemy* enemy) {
+    vector<Wall*>::iterator it;
+    for (it = walls.begin(); it < walls.end(); it++) {
+        bool collided = CheckCollisionAABB((*it)->getCollisionBox(), enemy->getCollisionBox());
+        if (collided)
+            return true;
+    }
+
+    return false;
+}
+
+bool Tema2::DetectCollision_ProjWalls(Projectile* proj) {
+    vector<Wall*>::iterator it;
+    for (it = walls.begin(); it < walls.end(); it++) {
+        bool collided = CheckCollisionSphereAABB(proj->getCollisionBox(), (*it)->getCollisionBox());
+        if (collided)
+            return true;
+    }
+
+    return false;
+}
+
+void Tema2::HandleCollisions_ProjectiesEnemies() {
+    vector<Projectile*>::iterator it_p;
+    vector<Enemy*>::iterator it_e;
+
+    for (it_p = projectiles.begin(); it_p < projectiles.end(); ) { // for each projectile
+        bool collided = false;
+        for (it_e = enemies.begin(); it_e < enemies.end(); ) { // for each enemy
+            collided = CheckCollisionSphereAABB((*it_p)->getCollisionBox(), (*it_e)->getCollisionBox());
+            if (collided) {
+                it_e = enemies.erase(it_e);
+                it_p = projectiles.erase(it_p);
+                break;
+            } else {
+                it_e++;
+            }
+        }
+
+        if (!collided)
+            it_p++;
+    }
+}
+
 void Tema2::UpdatePlayer() {
     glm::vec3 oldTranslation = player->translation; // translation before current movement   
     player->translation = player->deltaTranslation;
 
-    if (HandleColl_PlayerWall() == true) { // TODO: only if player has moved
+    if (DetectCollision_PlayerWalls() == true)
         player->translation = oldTranslation;
-    }
-    else {
+    else
         UpdateCameraPos();
-    }
 
     player->modelMatrix = glm::translate(glm::mat4(1), player->translation);
     player->modelMatrix = glm::rotate(player->modelMatrix, playerRotateAngle, glm::vec3(0, 1, 0));
 
     if (renderPlayer)
-        RenderEntity(player);
+        RenderEntity(player, "NewShader");
 
     ////// Collision box render test
-    //glm::mat4 cbox_modelMatrix = glm::mat4(1);
-    //cbox_modelMatrix = glm::translate(cbox_modelMatrix, player->translation);
-    //cbox_modelMatrix = glm::translate(cbox_modelMatrix, glm::vec3(0, 0.725f, 0));
-    //cbox_modelMatrix = glm::scale(cbox_modelMatrix, glm::vec3(0.6f / 2.f, 1.45f / 2.f, 0.6f / 2.f));
-    //RenderSimpleMesh(meshes["yellow_cube"], shaders["NewShader"], cbox_modelMatrix);
+   /* glm::mat4 cbox_modelMatrix = glm::mat4(1);
+    cbox_modelMatrix = glm::translate(cbox_modelMatrix, player->translation);
+    cbox_modelMatrix = glm::translate(cbox_modelMatrix, glm::vec3(0, 0.725f, 0));
+    cbox_modelMatrix = glm::scale(cbox_modelMatrix, glm::vec3(0.6f / 2.f, 1.45f / 2.f, 0.6f / 2.f));
+    RenderSimpleMesh(meshes["yellow_cube"], shaders["NewShader"], cbox_modelMatrix, projectionMatrixPersp);*/
 }
 
 void Tema2::UpdateWalls() {
     vector<Wall*>::iterator it;
     for (it = walls.begin(); it < walls.end(); it++) {
-        RenderEntity(*it);
+        RenderEntity(*it, "NewShader");
     }
 }
 
@@ -286,7 +335,7 @@ void Tema2::UpdateEnemies(float deltaTimeSeconds) {
         (*it)->translation += (*it)->directions[(*it)->currDir] * dist;
         (*it)->modelMatrix = glm::translate(glm::mat4(1), (*it)->translation);
 
-        // if (HandleColl_EnemyWalls(*it)) { // version with movement restricted by walls
+        // if (DetectCollision_EnemyWalls(*it)) { // version with movement restricted by walls
         // movement restricted by current cell
         bool reachedWall = false;
 
@@ -314,7 +363,7 @@ void Tema2::UpdateEnemies(float deltaTimeSeconds) {
             (*it)->ChangeDir();
         }
 
-        RenderEntity(*it);
+        RenderEntity(*it, "NewShader");
     }
 }
 
@@ -341,26 +390,74 @@ void Tema2::UpdateBar() {
 
     RenderSimpleMesh(meshes["green_cube"], shaders["NewShader"], currHealthModelMatrix, projectionMatrixOrtho);
     RenderSimpleMesh(meshes["red_cube"], shaders["NewShader"], maxHealthModelMatrix, projectionMatrixOrtho);
-
 }
+
+void Tema2::SpawnProjectile() {
+    glm::vec3 projInitialPos = player->translation + glm::vec3(0, 1, 0);
+
+    glm::vec3 camProjDiff = -glm::vec3(0, camera->position.y, 0) + glm::vec3(0, projInitialPos.y, 0);
+    glm::vec3 projVector = camera->forward * 3.f - camProjDiff;
+
+    glm::vec3 normalizedProjVector = glm::normalize(projVector);
+    Projectile* proj = new Projectile(projInitialPos, normalizedProjVector);
+    projectiles.push_back(proj);
+}
+
+void Tema2::UpdateProjectiles(float deltaTimeSeconds) {
+    vector<Projectile*>::iterator it;
+    for (it = projectiles.begin(); it < projectiles.end(); ) {
+        // Reduce time
+        (*it)->remainingTime -= deltaTimeSeconds;
+        if ((*it)->remainingTime <= 0 || DetectCollision_ProjWalls(*it) == true) {
+            cout << "collided";
+            it = projectiles.erase(it);
+        }
+        else {
+            glm::vec3 translation = (*it)->direction * (*it)->speed * deltaTimeSeconds;
+            (*it)->translation += translation;
+            //(*it)->modelMatrix = glm::translate((*it)->modelMatrix, translation);
+            (*it)->modelMatrix = glm::translate(glm::mat4(1), (*it)->translation);
+            RenderEntity(*it, "ProjectileShader");
+            it++;
+        }
+    }
+}
+
+
+
+void Tema2::FrameStart() {
+    // Clears the color buffer (using the previously set color) and depth buffer
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glm::ivec2 resolution = window->GetResolution();
+    // Sets the screen area where to draw
+    glViewport(0, 0, resolution.x, resolution.y);
+}
+
 void Tema2::Update(float deltaTimeSeconds)
 {
+    glm::mat4 currHealthModelMatrix = glm::mat4(1);
+    currHealthModelMatrix = glm::translate(currHealthModelMatrix, glm::vec3(-4, 0, -4));
+
+    HandleCollisions_ProjectiesEnemies();
     UpdatePlayer();
     UpdateWalls();
+    UpdateProjectiles(deltaTimeSeconds);
     UpdateEnemies(deltaTimeSeconds);
     UpdateCrosshair();
     UpdateBar();
-
 }
 
 
 void Tema2::FrameEnd()
 {
-    DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
+   // DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
 }
 
 void Tema2::OnInputUpdate(float deltaTime, int mods)
 {
+   // window->DisablePointer();
     float cameraSpeed = 2.0f;
     float playerSpeed = 2.0f;
 
@@ -371,65 +468,42 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
 
         player->deltaTranslation = player->translation;
 
-
         if (window->KeyHold(GLFW_KEY_W)) {
             player->deltaTranslation += glm::vec3(camera->forward.x, 0, camera->forward.z) * playerSpeed * deltaTime;
         }
-
         if (window->KeyHold(GLFW_KEY_S)) {
             player->deltaTranslation += glm::vec3(camera->forward.x, 0, camera->forward.z) * (-playerSpeed) * deltaTime;
         }
-
         if (window->KeyHold(GLFW_KEY_A)) {
             player->deltaTranslation += camera->right * (-playerSpeed) * deltaTime;
         }
-
         if (window->KeyHold(GLFW_KEY_D)) {
             player->deltaTranslation += camera->right * playerSpeed * deltaTime;
         }
     }
-
+   
     if (window->KeyHold(GLFW_KEY_Q)) {
         camera->TranslateUpward(cameraSpeed * deltaTime);
     }
-
     if (window->KeyHold(GLFW_KEY_E)) {
         camera->TranslateUpward(-cameraSpeed * deltaTime);
     }
+    
 }
 
 void Tema2::OnKeyPress(int key, int mods)
 {
-    if (key == GLFW_KEY_X) {
+    if (key == GLFW_KEY_SPACE)
+        SpawnProjectile();
+    if (key == GLFW_KEY_LEFT_CONTROL || key == GLFW_KEY_RIGHT_CONTROL)
+        ChangePerspective();
+    if (key == GLFW_KEY_X)
         window->DisablePointer();
-    }
-
-    if (key == GLFW_KEY_T) {
-        renderPlayer = !renderPlayer;
-    }
     // Switch projections
-    if (key == GLFW_KEY_O) {
+    if (key == GLFW_KEY_O)
         projectionMatrix = glm::ortho(-ortho_x, ortho_x, -ortho_y, ortho_y, 0.01f, 200.f);
-    }
-    else if (key == GLFW_KEY_P) {
+    else if (key == GLFW_KEY_P)
         projectionMatrix = glm::perspective(RADIANS(FOV_angle), window->props.aspectRatio, 0.01f, 200.0f);
-    }
-
-    if (key == GLFW_KEY_LEFT_CONTROL || key == GLFW_KEY_RIGHT_CONTROL ||
-        key == GLFW_MOUSE_BUTTON_RIGHT) {
-
-        window->DisablePointer();
-
-        firstPersonCamera = !firstPersonCamera;
-        if (firstPersonCamera) {
-            camera->TranslateForward(camera->distanceToTarget);
-            renderPlayer = false;
-        }
-        else {
-            camera->TranslateForward(-camera->distanceToTarget);
-            renderPlayer = true;
-        }
-    }
 }
 
 void Tema2::OnKeyRelease(int key, int mods)
@@ -461,10 +535,18 @@ void Tema2::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 
 
 void Tema2::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
-{}
+{
+    if (firstPersonCamera && button == 1) {
+        SpawnProjectile();
+    }
 
-void Tema2::OnMouseBtnRelease(int mouseX, int mouseY, int button, int mods)
-{}
+    if (button == 2) {
+        ChangePerspective();
+    }
+}
+
+void Tema2::OnMouseBtnRelease(int mouseX, int mouseY, int button, int mods) {
+}
 
 void Tema2::OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY)
 {}

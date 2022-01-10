@@ -1,7 +1,7 @@
 #version 330
 
 // Input
-// TODO(student): Get values from vertex shader
+// Getting values from vertex shader
 in vec3 fragColor;
 
 // Output
@@ -10,7 +10,6 @@ uniform float time;
 
 void main()
 {
-    // TODO(student): Write pixel out color
+    // Write pixel out color
     out_color = vec4(fragColor, 1);
-
 }

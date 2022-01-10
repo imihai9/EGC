@@ -8,5 +8,10 @@ struct AABB {
 	glm::vec3 max; // maxX, maxY, maxZ
 };
 
-bool CheckCollisionAABB (AABB *aabb1, AABB *aabb2);
+struct Sphere {
+	glm::vec3 center;
+	float radius;
+};
 
+bool CheckCollisionAABB (AABB *aabb1, AABB *aabb2);
+bool CheckCollisionSphereAABB (Sphere* sphere, AABB* AABB);

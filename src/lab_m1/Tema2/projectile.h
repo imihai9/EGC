@@ -5,29 +5,27 @@
 #include "lab_m1/Tema2/collision.h"
 
 namespace tema2 {
-	class Enemy : public Entity
+	class Projectile : public Entity
 	{
 	public:
-		Enemy(glm::vec3 pos);
-		AABB* getCollisionBox();
+		Projectile(glm::vec3 pos, glm::vec3 dir);
+		Sphere* getCollisionBox();
 		void ChangeDir();
 
 		std::vector<Entity::Primitive> const& getPrimitives();
-
-		std::vector<glm::vec3> directions;
 		glm::vec3 translation;
-		glm::vec3 size;
-		int currDir; // 0/1/2/3
-
+		glm::vec3 direction;
+		float speed;
+		float remainingTime;
 
 	private:
 		void Create();
 		void InitCollisionBox();
 
 		glm::vec3 pos;
-
+		float size;
 		std::vector<Entity::Primitive> primitives;
-		AABB collisionBox;
-		AABB updatedCollisionBox;
+		Sphere collisionBox;
+		Sphere updatedCollisionBox;
 	};
 }

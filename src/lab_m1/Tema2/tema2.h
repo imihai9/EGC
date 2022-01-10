@@ -6,6 +6,7 @@
 #include "lab_m1/Tema2/maze.h"
 #include "lab_m1/Tema2/wall.h"
 #include "lab_m1/Tema2/enemy.h"
+#include "lab_m1/Tema2/projectile.h"
 #include "lab_m1/Tema2/collision.h"
 using namespace tema2;
 
@@ -33,19 +34,24 @@ namespace m1
         void OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) override;
         void OnWindowResize(int width, int height) override;
 
-        void RenderEntity(tema2::Entity* entity);
+        void RenderEntity(tema2::Entity* entity, const char *shader);
         void RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, const glm::mat4& projMatrix);
         Mesh* CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices);
         void CreateCube(const char *name, glm::vec3 color);
         void InitMaze();
+        void SpawnProjectile();
         void UpdateCameraPos();
         void UpdatePlayer();
         void UpdateWalls();
         void UpdateEnemies(float deltaTimeSeconds);
         void UpdateCrosshair();
         void UpdateBar();
-        bool HandleColl_PlayerWall();
-        bool HandleColl_EnemyWalls(tema2::Enemy *enemy);
+        void UpdateProjectiles(float deltaTimeSeconds);
+        bool DetectCollision_PlayerWalls();
+        bool DetectCollision_EnemyWalls(tema2::Enemy *enemy);
+        bool DetectCollision_ProjWalls(tema2::Projectile* proj);
+        void HandleCollisions_ProjectiesEnemies();
+        void ChangePerspective();
 
     protected:
         Camera* camera;
@@ -55,6 +61,7 @@ namespace m1
         tema2::Maze* maze;
         std::vector<tema2::Wall*> walls;
         std::vector<tema2::Enemy*> enemies;
+        std::vector<tema2::Projectile*> projectiles;
 
         glm::mat4 projectionMatrix;
         glm::mat4 projectionMatrixOrtho;

@@ -20,7 +20,7 @@ out vec3 fragColor; // pasam culoarea -> vertex shader (varyings)
 void main()
 {
     // Send output to fragment shader
-    fragColor = v_color;
+    fragColor = glm::vec3(0.28f, 0.46f, 0.45f);
     // Compute gl_Position
     gl_Position = Projection * View * Model * vec4(v_position, 1);
 }

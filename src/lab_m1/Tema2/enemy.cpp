@@ -35,9 +35,6 @@ void Enemy::ChangeDir() {
 }
 
 void Enemy::InitCollisionBox() {
-    // A wall is a cube of size 
-    // collisionBox.center = pos;
-    // collisionBox.size = glm::vec3(0.4, 2, 0.4);
     collisionBox.min = pos - size * 0.5f;
     collisionBox.max = pos + size * 0.5f;
 }
