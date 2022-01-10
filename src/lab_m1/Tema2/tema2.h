@@ -34,8 +34,8 @@ namespace m1
         void OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) override;
         void OnWindowResize(int width, int height) override;
 
-        void RenderEntity(tema2::Entity* entity, const char *shader);
-        void RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, const glm::mat4& projMatrix);
+        void RenderEntity(tema2::Entity* entity, const char *shader, float time);
+        void RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix, const glm::mat4& projMatrix, float elapsedTime);
         Mesh* CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices);
         void CreateCube(const char *name, glm::vec3 color);
         void InitMaze();
@@ -45,17 +45,14 @@ namespace m1
         void UpdateWalls();
         void UpdateEnemies(float deltaTimeSeconds);
         void UpdateCrosshair();
-        void UpdateBar();
+        void UpdateBar(float metric, float height);
         void UpdateProjectiles(float deltaTimeSeconds);
         bool DetectCollision_PlayerWalls();
         bool DetectCollision_EnemyWalls(tema2::Enemy *enemy);
         bool DetectCollision_ProjWalls(tema2::Projectile* proj);
         void HandleCollisions_ProjectiesEnemies();
+        void HandleCollision_PlayerEnemies();
         void ChangePerspective();
-
-    protected:
-        Camera* camera;
-        Camera* hudCamera;
 
         tema2::Player* player;
         tema2::Maze* maze;
@@ -67,8 +64,9 @@ namespace m1
         glm::mat4 projectionMatrixOrtho;
         glm::mat4 projectionMatrixPersp;
 
-        bool renderPlayer;
+        float timeRemaining;
 
+        bool renderPlayer;
         bool firstPersonCamera;
 
         float FOV_angle;
@@ -76,5 +74,8 @@ namespace m1
         float ortho_y;
 
         float playerRotateAngle = 0;
+    protected:
+        Camera* camera;
+        Camera* hudCamera;
     };
 }   // namespace m1

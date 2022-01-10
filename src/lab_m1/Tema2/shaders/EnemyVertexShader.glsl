@@ -13,14 +13,22 @@ layout(location = 3) in vec3 v_color;
 uniform mat4 Model;
 uniform mat4 View;
 uniform mat4 Projection;
-
+uniform float time;
 // Output
 out vec3 fragColor; // pasam culoarea -> fragment shader (varyings)
+
+float rand(vec2 co){
+  return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
 
 void main()
 {
     // Send output to fragment shader
-    fragColor = glm::vec3(0.28f, 0.46f, 0.45f);
+    fragColor = glm::vec3(0.54f, 0.f, 0.f); // v_color;
     // Compute gl_Position
-    gl_Position = Projection * View * Model * vec4(v_position, 1);
+
+    // move the position along the normal and transform it
+    float rnd = rand(vec2(v_position.x, v_position.z));
+    vec3 newPosition = v_position + v_normal * rnd * rnd * 1.5f * time;
+    gl_Position = Projection * View * Model * vec4(newPosition, 1);
 }

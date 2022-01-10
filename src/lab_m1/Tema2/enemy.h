@@ -17,8 +17,13 @@ namespace tema2 {
 		std::vector<glm::vec3> directions;
 		glm::vec3 translation;
 		glm::vec3 size;
-		int currDir; // 0/1/2/3
-
+		int currDir; // 0/1/2/
+		float dmgCaused;
+		float speed;
+		
+		bool hitByProj = false;
+		float timeSinceHit = 0;
+		const float timeAliveAfterHit = 1.f;
 
 	private:
 		void Create();

@@ -15,7 +15,7 @@ uniform mat4 View;
 uniform mat4 Projection;
 
 // Output
-out vec3 fragColor; // pasam culoarea -> vertex shader (varyings)
+out vec3 fragColor; // pasam culoarea -> fragment shader (varyings)
 
 void main()
 {

@@ -13,7 +13,7 @@ Projectile::Projectile(glm::vec3 pos, glm::vec3 dir) {
     this->direction = dir;
     this->translation = glm::vec3(0);
     this->speed = 8.f;
-    this->remainingTime = 0.5f;
+    this->remainingTime = 0.8f;
 
     Create();
     InitCollisionBox();

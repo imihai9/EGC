@@ -8,7 +8,7 @@ using namespace tema2;
 using namespace std;
 
 Player::Player() {
-    health = 50;
+    health = 100;
     translation = glm::vec3(0);
     deltaTranslation = glm::vec3(0);
     modelMatrix = glm::mat4(1); // global model matrix
@@ -107,8 +107,8 @@ void Player::Create() {
     primitives.push_back({ "green_cube" , m_arm2 });
     primitives.push_back({ "yellow_cube" , m_hand1 });
     primitives.push_back({ "yellow_cube" , m_hand2 });
-    primitives.push_back({ "blue_cube" , m_leg1 });
-    primitives.push_back({ "blue_cube" , m_leg2 });
+    primitives.push_back({ "dark_blue_cube" , m_leg1 });
+    primitives.push_back({ "dark_blue_cube" , m_leg2 });
 }
 
 std::vector<Entity::Primitive> const& Player::getPrimitives() {
@@ -119,9 +119,5 @@ AABB* Player::getCollisionBox() {
     
     updatedCollisionBox.min = collisionBox.min + this->translation;
     updatedCollisionBox.max = collisionBox.max + this->translation;
-
-    //cout << "p x: " << collisionBox.minX << ' ' << collisionBox.maxX << endl;
-   // cout << "p y: " << collisionBox.minY << ' ' << collisionBox.maxY << endl;
-   // cout << "p z: " << collisionBox.minZ << ' ' << collisionBox.maxZ << endl;
     return &updatedCollisionBox;
 }
