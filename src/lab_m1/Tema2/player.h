@@ -12,6 +12,7 @@ namespace tema2 {
 		AABB* getCollisionBox();
 
 		float health;
+		float speed;
 		glm::vec3 translation;
 		glm::vec3 deltaTranslation;
 		std::vector<Entity::Primitive> const& getPrimitives();

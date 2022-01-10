@@ -52,11 +52,13 @@ namespace m1
         bool DetectCollision_ProjWalls(tema2::Projectile* proj);
         void HandleCollisions_ProjectiesEnemies();
         void HandleCollision_PlayerEnemies();
+        void HandleCollision_PlayerExits();
         void ChangePerspective();
 
         tema2::Player* player;
         tema2::Maze* maze;
         std::vector<tema2::Wall*> walls;
+        std::vector<tema2::Wall*> exits; // invisible walls
         std::vector<tema2::Enemy*> enemies;
         std::vector<tema2::Projectile*> projectiles;
 

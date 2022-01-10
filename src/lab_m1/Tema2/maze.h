@@ -13,6 +13,7 @@ namespace tema2 {
 		vector<vector<int>> getMatrix();
 
 	private:
+		std::vector<vector<vector<int>>> possibleMatrices;
 		vector<vector<int>> matrix;
 	};
 }

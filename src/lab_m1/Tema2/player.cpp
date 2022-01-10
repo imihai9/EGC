@@ -9,6 +9,7 @@ using namespace std;
 
 Player::Player() {
     health = 100;
+    speed = 4.f;
     translation = glm::vec3(0);
     deltaTranslation = glm::vec3(0);
     modelMatrix = glm::mat4(1); // global model matrix

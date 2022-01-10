@@ -93,7 +93,12 @@ void Tema2::InitMaze() {
             }
             else if (mazeMat[i][j] == 3) { // Initial player pos
                 player->deltaTranslation = glm::vec3(2 * i, 0, 2 * j);
+                cout << "helo!";
                 UpdatePlayer();
+            }
+            else if (mazeMat[i][j] == 4) {
+                Wall* wall = new Wall(glm::vec3(2 * i, 1, 2 * j));
+                exits.push_back(wall);
             }
         }
     }
@@ -184,7 +189,7 @@ void Tema2::CreateCube(const char* name, glm::vec3 color) {
 }
 
 void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelMatrix,
-                    const glm::mat4& projMatrix, float elapsedTime) {
+    const glm::mat4& projMatrix, float elapsedTime) {
     if (!mesh || !shader || !shader->GetProgramID())
         return;
 
@@ -216,7 +221,7 @@ void Tema2::RenderSimpleMesh(Mesh* mesh, Shader* shader, const glm::mat4& modelM
 }
 
 
-void Tema2::RenderEntity(Entity* entity, const char *shader, float time) {
+void Tema2::RenderEntity(Entity* entity, const char* shader, float time) {
     vector<Entity::Primitive> primitives = entity->getPrimitives();
 
     for (Entity::Primitive primitive : primitives) {
@@ -305,7 +310,8 @@ void Tema2::HandleCollisions_ProjectiesEnemies() {
                 it_e++;
                 it_p = projectiles.erase(it_p);
                 break;
-            } else {
+            }
+            else {
                 it_e++;
             }
         }
@@ -318,12 +324,32 @@ void Tema2::HandleCollisions_ProjectiesEnemies() {
 void GameOver() {
     for (int i = 0; i < 10; i++)
         cout << '\n';
-    cout << "Game over!\n";
+    for (int i = 0; i < 5; i++)
+        cout << "Game over!\n";
     for (int i = 0; i < 10; i++)
         cout << '\n';
     exit(0);
 }
 
+void GameWon() {
+    for (int i = 0; i < 10; i++)
+        cout << '\n';
+    for (int i = 0; i < 5; i++)
+        cout << "YOU WON!\n";
+    for (int i = 0; i < 10; i++)
+        cout << '\n';
+    exit(0);
+}
+
+void Tema2::HandleCollision_PlayerExits() {
+    vector<Wall*>::iterator it;
+    for (it = exits.begin(); it < exits.end(); it++) {
+        bool collided = CheckCollisionAABB(player->getCollisionBox(), (*it)->getCollisionBox());
+        if (collided) {
+            GameWon();
+        }
+    }
+}
 void Tema2::HandleCollision_PlayerEnemies() {
     vector<Enemy*>::iterator it;
     for (it = enemies.begin(); it < enemies.end(); it++) { // for each enemy
@@ -352,7 +378,7 @@ void Tema2::UpdatePlayer() {
 
     if (renderPlayer)
         RenderEntity(player, "NewShader", 0);
-    
+
     ////// Collision box render test
  /*    glm::mat4 cbox_modelMatrix = glm::mat4(1);
      cbox_modelMatrix = glm::translate(cbox_modelMatrix, player->translation);
@@ -403,7 +429,7 @@ void Tema2::UpdateEnemies(float deltaTimeSeconds) {
             (*it)->translation -= (*it)->directions[(*it)->currDir] * dist;
             (*it)->ChangeDir();
         }
-        
+
         RenderEntity(*it, "EnemyShader", (*it)->timeSinceHit);
 
         if ((*it)->hitByProj) {
@@ -497,7 +523,8 @@ void Tema2::Update(float deltaTimeSeconds)
 
     UpdateBar(timeRemaining, 10);
     UpdateBar(player->health, 15);
-    
+
+    HandleCollision_PlayerExits();
     HandleCollision_PlayerEnemies();
     HandleCollisions_ProjectiesEnemies();
     UpdatePlayer();
@@ -505,19 +532,18 @@ void Tema2::Update(float deltaTimeSeconds)
     UpdateProjectiles(deltaTimeSeconds);
     UpdateEnemies(deltaTimeSeconds);
     UpdateCrosshair();
-   
+
 }
 
 
 void Tema2::FrameEnd()
 {
-   // DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
+    // DrawCoordinateSystem(camera->GetViewMatrix(), projectionMatrix);
 }
 
 void Tema2::OnInputUpdate(float deltaTime, int mods)
 {
     float cameraSpeed = 2.0f;
-    float playerSpeed = 2.0f;
 
     if (window->KeyHold(GLFW_KEY_W) ||
         window->KeyHold(GLFW_KEY_S) ||
@@ -525,31 +551,31 @@ void Tema2::OnInputUpdate(float deltaTime, int mods)
         window->KeyHold(GLFW_KEY_D)) {
 
         player->deltaTranslation = player->translation;
-        
+
         glm::vec3 normalForward = glm::normalize(camera->forward);
         glm::vec3 normalRight = glm::normalize(camera->right);
 
         if (window->KeyHold(GLFW_KEY_W)) {
-            player->deltaTranslation += glm::vec3(normalForward.x, 0, normalForward.z) * playerSpeed * deltaTime;
+            player->deltaTranslation += glm::vec3(normalForward.x, 0, normalForward.z) * player->speed * deltaTime;
         }
         if (window->KeyHold(GLFW_KEY_S)) {
-            player->deltaTranslation += glm::vec3(normalForward.x, 0, normalForward.z) * (-playerSpeed) * deltaTime;
+            player->deltaTranslation += glm::vec3(normalForward.x, 0, normalForward.z) * (-player->speed) * deltaTime;
         }
         if (window->KeyHold(GLFW_KEY_A)) {
-            player->deltaTranslation += normalRight * (-playerSpeed) * deltaTime;
+            player->deltaTranslation += normalRight * (-player->speed) * deltaTime;
         }
         if (window->KeyHold(GLFW_KEY_D)) {
-            player->deltaTranslation += normalRight * playerSpeed * deltaTime;
+            player->deltaTranslation += normalRight * player->speed * deltaTime;
         }
     }
-   
+
     if (window->KeyHold(GLFW_KEY_Q)) {
         camera->TranslateUpward(cameraSpeed * deltaTime);
     }
     if (window->KeyHold(GLFW_KEY_E)) {
         camera->TranslateUpward(-cameraSpeed * deltaTime);
     }
-    
+
 }
 
 void Tema2::OnKeyPress(int key, int mods)
@@ -580,7 +606,6 @@ void Tema2::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
     if (firstPersonCamera) {
         // Rotate the camera in first-person mode around
         // OX and OY.
-
         camera->RotateFirstPerson_OX(-deltaY * sensivityOY); // looks up-down
         camera->RotateFirstPerson_OY(-deltaX * sensivityOX); // looks left-right
     }
